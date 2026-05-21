@@ -1,0 +1,175 @@
+# .github/workflows/ci.yml
+# ImplantChain CI Pipeline
+# Runs on every push to main and every pull request
+# Tests must pass before merge is allowed
+
+name: ImplantChain CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20.x'
+  TEST_DB_HOST: localhost
+  TEST_DB_PORT: 5432
+  TEST_DB_NAME: implant_chain_test
+  TEST_DB_USER: postgres
+  TEST_DB_PASSWORD: postgres
+
+jobs:
+  # ── Job 1: Backend Tests ────────────────────────────────────────────────
+  backend-tests:
+    name: Backend Tests (Unit + Integration + Regression)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: implant_chain_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 1
+          done
+
+      - name: Run unit tests
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          TEST_DB_PORT: 5432
+          SESSION_SECRET: test-session-secret-for-ci
+          SENDGRID_API_KEY: SG.fake.key.for.testing
+        run: npm run test:unit -- --coverage
+
+      - name: Run integration tests
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          TEST_DB_PORT: 5432
+          SESSION_SECRET: test-session-secret-for-ci
+          SENDGRID_API_KEY: SG.fake.key.for.testing
+        run: npm run test:integration
+
+      - name: Run regression tests (all 13 features)
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          TEST_DB_PORT: 5432
+          SESSION_SECRET: test-session-secret-for-ci
+          SENDGRID_API_KEY: SG.fake.key.for.testing
+        run: npm run test:regression
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          directory: backend/coverage
+          flags: backend
+          fail_ci_if_error: false
+
+  # ── Job 2: Frontend Build ───────────────────────────────────────────────
+  frontend-build:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Check build output exists
+        run: test -f frontend/dist/index.html
+
+  # ── Job 3: Security Audit ───────────────────────────────────────────────
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Audit backend dependencies
+        working-directory: backend
+        run: npm audit --audit-level=high
+        continue-on-error: true  # Warn but don't block on moderate vulnerabilities
+
+      - name: Audit frontend dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  # ── Job 4: Chaincode Tests ──────────────────────────────────────────────
+  chaincode-tests:
+    name: Chaincode Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: chaincode/package-lock.json
+
+      - name: Install chaincode dependencies
+        working-directory: chaincode
+        run: npm ci
+
+      - name: Run chaincode tests
+        working-directory: chaincode
+        run: npm test
+
+  # ── Status check (required to merge) ───────────────────────────────────
+  all-checks:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build, chaincode-tests]
+    steps:
+      - run: echo "✅ All CI checks passed — safe to merge"
