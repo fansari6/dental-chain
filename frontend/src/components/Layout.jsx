@@ -4,52 +4,48 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import logo from '../assets/dapp-architects-website-logo.png';
 
-const HEADER_HEIGHT = 81; // px — must match the actual header height below
+const HEADER_HEIGHT = 81;
 
 const NAV = [
-  { path:'/dashboard',           label:'Dashboard',            icon:'⬡', roles:null },
-  { path:'/government',          label:'FDA / Regulatory',     icon:'🏛', roles:['government'] },
-  { path:'/manufacturer',        label:'Manufacturer',         icon:'🏭', roles:['manufacturer'] },
-  { path:'/distributor',         label:'Distributor / Rep',    icon:'🚚', roles:['distributor'] },
-  { path:'/supply-chain',        label:'Supply Chain',         icon:'📦', roles:['supply_chain'] },
-  { path:'/nurse',               label:'OR Nurse',             icon:'🩺', roles:['nurse','supply_chain'] },
-  { path:'/infection-prevention',label:'Infection Prevention', icon:'🔬', roles:['infection_prevention','government'] },
-  { path:'/surgeon', label:'Surgeon Portal', icon:'🔪', roles:['surgeon'] },
-  { path:'/bulk-import',         label:'Bulk Import',          icon:'📥', roles:['admin','supply_chain'] },
-  { path:'/admin',               label:'Admin',                icon:'⚙',  roles:['admin'] },
-  { path:'/cases',               label:'OR Schedule',          icon:'📅', roles:['nurse','supply_chain','surgeon'] },
-  { path:'/notifications',       label:'Notifications',        icon:'📧', roles:['admin'] },
-  { path:'/analytics',           label:'Analytics',            icon:'📊', roles:['admin'] },
-  { path:'/onboarding',          label:'Onboarding',           icon:'🏥', roles:['admin'] },
-  { path:'/audit',               label:'Audit Trail',          icon:'📜', roles:['admin','government'] },
-  { path:'/compliance',          label:'UDI Compliance',       icon:'📊', roles:['government','infection_prevention','admin','nurse','supply_chain'] },
-  { path:'/history',             label:'Blockchain History',   icon:'📋', roles:null },
-  { path:'/verify',              label:'Verify Device',        icon:'🔍', roles:null },
+  { path:'/dashboard',            label:'Dashboard',             icon:'⬡',  roles:null },
+  { path:'/government',           label:'FDA / Regulatory',      icon:'🏛',  roles:['government'] },
+  { path:'/manufacturer',         label:'Manufacturer',          icon:'🏭',  roles:['manufacturer'] },
+  { path:'/distributor',          label:'Distributor / Rep',     icon:'🚚',  roles:['distributor'] },
+  { path:'/dentist',              label:'Dentist Portal',        icon:'🦷',  roles:['dentist'] },
+  { path:'/dental-assistant',     label:'Dental Assistant',      icon:'🩺',  roles:['dental_assistant','dentist'] },
+  { path:'/infection-control',    label:'Infection Control',     icon:'🔬',  roles:['infection_control','government'] },
+  { path:'/cases',                label:'Treatment Cases',       icon:'📅',  roles:['dentist','dental_assistant','admin'] },
+  { path:'/lab-work',             label:'Lab Work',              icon:'🧪',  roles:['dentist','dental_assistant','admin'] },
+  { path:'/follow-ups',           label:'Follow-ups',            icon:'📋',  roles:['dentist','dental_assistant','infection_control','admin'] },
+  { path:'/admin',                label:'Admin',                 icon:'⚙',   roles:['admin'] },
+  { path:'/analytics',            label:'Analytics',             icon:'📊',  roles:['admin'] },
+  { path:'/onboarding',           label:'Onboarding',            icon:'🏥',  roles:['admin'] },
+  { path:'/audit',                label:'Audit Trail',           icon:'📜',  roles:['admin','government'] },
+  { path:'/compliance',           label:'UDI Compliance',        icon:'✅',  roles:['government','infection_control','admin'] },
+  { path:'/history',              label:'Blockchain History',    icon:'⛓',   roles:null },
+  { path:'/verify',               label:'Verify Device',         icon:'🔍',  roles:null },
 ];
 
 const ROLE_COLORS = {
-  government:           'var(--accent-blue)',
-  manufacturer:         'var(--accent-green)',
-  distributor:          'var(--accent-cyan)',
-  supply_chain:         'var(--accent-purple)',
-  nurse:                'var(--accent-amber)',
-  infection_prevention: 'var(--accent-red)',
-  surgeon:              'var(--accent-blue)',
-  admin:                'var(--text-muted)',
+  government:        '#3b82f6',
+  manufacturer:      '#10b981',
+  distributor:       '#06b6d4',
+  dentist:           '#8b5cf6',
+  dental_assistant:  '#f59e0b',
+  infection_control: '#ef4444',
+  admin:             '#ff8000',
 };
 
 const ROLE_LABELS = {
-  government:           'FDA / Regulatory',
-  manufacturer:         'Manufacturer',
-  distributor:          'Distributor / Rep',
-  supply_chain:         'Supply Chain',
-  nurse:                'OR Nurse',
-  infection_prevention: 'Infection Prevention',
-  admin:                'Administrator',
-  surgeon:              'Surgeon',
+  government:        'FDA / Regulatory',
+  manufacturer:      'Manufacturer',
+  distributor:       'Distributor / Rep',
+  dentist:           'Dentist',
+  dental_assistant:  'Dental Assistant',
+  infection_control: 'Infection Control',
+  admin:             'Administrator',
 };
 
-// ── Designer Block font face ──────────────────────────────────────
 const fontFaceStyle = `
   @font-face {
     font-family: 'DesignerBlock';
@@ -60,7 +56,6 @@ const fontFaceStyle = `
   }
 `;
 
-// ── Role guard ────────────────────────────────────────────────────
 export function RequireRole({ roles, children }) {
   const { user } = useAuth();
   if (!user) return null;
@@ -77,22 +72,19 @@ export function RequireRole({ roles, children }) {
   return children;
 }
 
-// ── Layout ────────────────────────────────────────────────────────
 export function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
   const [showPwdModal, setShowPwdModal] = useState(false);
-  const [pwdForm,      setPwdForm]      = useState({current:'', next:'', confirm:''});
-  const [pwdMsg,       setPwdMsg]       = useState(null);
-  const [pwdBusy,      setPwdBusy]      = useState(false);
-  const [ccVersion,    setCcVersion]    = useState('implant …');
+  const [pwdForm,  setPwdForm]  = useState({ current:'', next:'', confirm:'' });
+  const [pwdMsg,   setPwdMsg]   = useState(null);
+  const [pwdBusy,  setPwdBusy]  = useState(false);
+  const [ccVersion, setCcVersion] = useState('dental …');
 
   useEffect(() => {
-    fetch('/api/chaincode-version')
-      .then(r => r.json())
-      .then(d => setCcVersion(d.label || `implant ${d.version}`))
-      .catch(() => setCcVersion('implant'));
+    api.getChaincodeVersion()
+      .then(d => setCcVersion(d.label || 'dental ' + d.version))
+      .catch(() => setCcVersion('dental'));
   }, []);
 
   const handleLogout = async () => {
@@ -100,43 +92,42 @@ export function Layout() {
     navigate('/login');
   };
 
-  const handleChangePassword = async () => {
-    if (pwdForm.next !== pwdForm.confirm) {
-      setPwdMsg({ type:'error', text:'Passwords do not match' }); return;
-    }
-    if (pwdForm.next.length < 8) {
-      setPwdMsg({ type:'error', text:'Password must be at least 8 characters' }); return;
-    }
-    setPwdBusy(true); setPwdMsg(null);
-    try {
-      await api.changePassword({ currentPassword:pwdForm.current, newPassword:pwdForm.next });
-      setPwdMsg({ type:'success', text:'Password changed successfully' });
-      setTimeout(() => {
-        setShowPwdModal(false);
-        setPwdForm({current:'', next:'', confirm:''});
-        setPwdMsg(null);
-      }, 1500);
-    } catch (err) { setPwdMsg({ type:'error', text:err.message }); }
-    finally { setPwdBusy(false); }
-  };
-
   const closePwdModal = () => {
     setShowPwdModal(false);
-    setPwdForm({current:'', next:'', confirm:''});
+    setPwdForm({ current:'', next:'', confirm:'' });
     setPwdMsg(null);
   };
 
+  const handleChangePassword = async () => {
+    if (pwdForm.next !== pwdForm.confirm) {
+      setPwdMsg({ type:'error', text:'Passwords do not match' });
+      return;
+    }
+    if (pwdForm.next.length < 8) {
+      setPwdMsg({ type:'error', text:'Password must be at least 8 characters' });
+      return;
+    }
+    setPwdBusy(true);
+    try {
+      await api.post('/change-password', { current: pwdForm.current, next: pwdForm.next });
+      setPwdMsg({ type:'success', text:'Password changed successfully' });
+      setTimeout(closePwdModal, 1500);
+    } catch (e) {
+      setPwdMsg({ type:'error', text: e.message });
+    } finally {
+      setPwdBusy(false);
+    }
+  };
+
   const visibleNav  = NAV.filter(n => !n.roles || n.roles.includes(user?.role));
-  const roleColor   = ROLE_COLORS[user?.role] || 'var(--accent-blue)';
+  const roleColor   = ROLE_COLORS[user?.role] || '#ff8000';
   const roleLabel   = ROLE_LABELS[user?.role] || user?.role;
 
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh', background:'var(--bg-primary)'}}>
-
-      {/* ── FONT FACE INJECTION ── */}
       <style>{fontFaceStyle}</style>
 
-      {/* ── CHANGE PASSWORD MODAL — rendered at root level ── */}
+      {/* ── CHANGE PASSWORD MODAL ── */}
       {showPwdModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1000,
           display:'flex',alignItems:'center',justifyContent:'center'}}
@@ -155,7 +146,7 @@ export function Layout() {
               <label>Current Password</label>
               <input type="password" value={pwdForm.current}
                 onChange={e=>setPwdForm(f=>({...f,current:e.target.value}))}
-                placeholder="Enter current password"/>
+                placeholder="Current password"/>
             </div>
             <div className="form-group" style={{marginBottom:12}}>
               <label>New Password</label>
@@ -172,9 +163,7 @@ export function Layout() {
             <div style={{display:'flex',gap:8}}>
               <button className="btn btn-primary" style={{flex:1}} disabled={pwdBusy}
                 onClick={handleChangePassword}>
-                {pwdBusy
-                  ? <><span className="spinner" style={{width:14,height:14}}/> Saving…</>
-                  : 'Change Password'}
+                {pwdBusy ? 'Saving…' : 'Change Password'}
               </button>
               <button className="btn btn-ghost" onClick={closePwdModal}>Cancel</button>
             </div>
@@ -196,8 +185,7 @@ export function Layout() {
         zIndex: 100,
         flexShrink: 0,
       }}>
-
-        {/* ── LOGO ── */}
+        {/* Logo */}
         <div style={{
           fontFamily: "'DesignerBlock', var(--font-mono), monospace",
           fontSize: 26,
@@ -205,23 +193,13 @@ export function Layout() {
           userSelect: 'none',
           letterSpacing: '2px',
         }}>
-          <span style={{
-            color: '#ff8000',
-          }}>
-            Implant
-          </span>
-          <span style={{
-            color: 'transparent',
-            WebkitTextStroke: '1.5px #ff8000',
-            textStroke: '1.5px #ff8000',
-          }}>
-            Chain
-          </span>
+          <span style={{color:'#ff8000'}}>Dental</span>
+          <span style={{color:'transparent',WebkitTextStroke:'1.5px #ff8000',textStroke:'1.5px #ff8000'}}>Chain</span>
         </div>
 
         <div style={{flex:1}}/>
 
-        {/* User info pill */}
+        {/* User pill */}
         <div style={{display:'flex',alignItems:'center',gap:12,padding:'6px 14px',
           background:'var(--bg-secondary)',borderRadius:'var(--radius-md)',
           border:'1px solid var(--border)'}}>
@@ -234,21 +212,19 @@ export function Layout() {
             <div style={{fontSize:13,fontWeight:600,color:'var(--text-primary)',lineHeight:1}}>
               {user?.username}
             </div>
-            <div style={{fontSize:11,color:roleColor,lineHeight:1}}>
-              {roleLabel}
-            </div>
+            <div style={{fontSize:11,color:roleColor,lineHeight:1}}>{roleLabel}</div>
           </div>
         </div>
 
         <div style={{width:1,height:32,background:'var(--border)',margin:'0 4px'}}/>
 
-        {/* Change Password button */}
+        {/* Change password */}
         <button onClick={()=>setShowPwdModal(true)}
           style={{padding:'7px 14px',fontSize:13,fontWeight:500,
             background:'transparent',border:'1px solid var(--border)',
             borderRadius:'var(--radius-sm)',color:'var(--text-secondary)',
             cursor:'pointer',display:'flex',alignItems:'center',gap:6}}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--accent-blue)';e.currentTarget.style.color='var(--accent-blue)';}}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor='#ff8000';e.currentTarget.style.color='#ff8000';}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--text-secondary)';}}>
           🔐 Password
         </button>
@@ -284,17 +260,17 @@ export function Layout() {
           height: `calc(100vh - ${HEADER_HEIGHT}px)`,
           overflowY: 'auto',
         }}>
-          {/* Role pill */}
+          {/* Role label */}
           <div style={{margin:'12px 10px 8px',padding:'8px 12px',
-            background:`${roleColor}15`,borderRadius:'var(--radius-sm)',
-            border:`1px solid ${roleColor}30`}}>
+            background:'var(--bg-secondary)',borderRadius:'var(--radius-sm)',
+            border:'1px solid var(--border)'}}>
             <div style={{fontSize:11,color:roleColor,fontWeight:600}}>{roleLabel}</div>
             <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'var(--font-mono)',marginTop:1}}>
               {user?.username}
             </div>
           </div>
 
-          {/* Nav links */}
+          {/* Nav */}
           <nav style={{flex:1, padding:'4px 8px 16px'}}>
             {visibleNav.map(n=>(
               <NavLink key={n.path} to={n.path}
@@ -302,10 +278,10 @@ export function Layout() {
                   display:'flex', alignItems:'center', gap:10,
                   padding:'8px 10px', borderRadius:'var(--radius-sm)',
                   marginBottom:2, textDecoration:'none', fontSize:13,
-                  background:isActive?'rgba(99,179,237,0.1)':'transparent',
-                  color:isActive?'var(--accent-cyan)':'var(--text-secondary)',
+                  background:isActive?'rgba(255,128,0,0.08)':'transparent',
+                  color:isActive?'#ff8000':'var(--text-secondary)',
                   fontWeight:isActive?600:400,
-                  borderLeft:isActive?'2px solid var(--accent-cyan)':'2px solid transparent',
+                  borderLeft:isActive?'2px solid #ff8000':'2px solid transparent',
                 })}>
                 <span style={{fontSize:15}}>{n.icon}</span>
                 {n.label}
@@ -313,28 +289,28 @@ export function Layout() {
             ))}
           </nav>
 
-          {/* Fabric status footer */}
+          {/* Fabric footer */}
           <div style={{padding:'10px 12px',borderTop:'1px solid var(--border)',
             fontSize:10,color:'var(--text-muted)',fontFamily:'var(--font-mono)'}}>
             <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:2}}>
               <div style={{width:6,height:6,borderRadius:'50%',background:'var(--accent-green)'}}/>
               Fabric connected
             </div>
-            <div>{ccVersion} · mychannel</div>
+            <div>{ccVersion} · dentalchannel</div>
           </div>
         </aside>
 
-        {/* Main content */}
+        {/* Main */}
         <main style={{flex:1, padding:'24px 32px', overflowY:'auto', maxWidth:1400}}>
           <Outlet/>
         </main>
       </div>
 
-      {/* Copyright footer */}
+      {/* Footer */}
       <div style={{padding:'10px 24px',borderTop:'1px solid var(--border)',
         background:'var(--bg-card)',fontSize:11,color:'var(--text-muted)',
         textAlign:'center',fontFamily:'var(--font-mono)',flexShrink:0}}>
-        © 2026–2027 DApp Architects, LLC · All rights reserved
+        © 2026–2027 DApp Architects, LLC · DentalChain · All rights reserved
       </div>
     </div>
   );

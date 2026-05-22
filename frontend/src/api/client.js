@@ -1,7 +1,6 @@
-// frontend/src/api/client.js
-// Centralized API client for all ImplantChain backend calls.
+// DentalChain API Client
+// All calls go through Vite proxy → backend port 4001
 
-// ─── Error parsing ────────────────────────────────────────────────
 function cleanError(message) {
   if (!message) return 'An unexpected error occurred';
   const cc     = message.match(/chaincode response \d+,\s*(.+?)(?:\s*$)/);
@@ -15,7 +14,6 @@ function cleanError(message) {
   return message;
 }
 
-// ─── HTTP helper ──────────────────────────────────────────────────
 async function request(method, path, body) {
   const res = await fetch(`/api${path}`, {
     method,
@@ -28,163 +26,120 @@ async function request(method, path, body) {
   return data;
 }
 
-// ─── API surface ──────────────────────────────────────────────────
 export const api = {
 
-  // ── Auth ─────────────────────────────────────────────────────────
-  login:          (creds)   => request('POST', '/login',  creds),
-  me:             ()        => request('GET',  '/me'),
-  logout:         ()        => request('POST', '/logout'),
-  changePassword: (payload) => request('POST', '/change-password', payload),
+  // ── Auth ──────────────────────────────────────────────────────────
+  login:   (creds) => request('POST', '/login',  creds),
+  me:      ()      => request('GET',  '/me'),
+  logout:  ()      => request('POST', '/logout'),
 
   // ── Admin — Users ─────────────────────────────────────────────────
-  getUsers:       ()         => request('GET',  '/admin/users'),
-  createUser:     (payload)  => request('POST', '/admin/users', payload),
-  deactivateUser:     (username)            => request('POST', `/admin/users/${username}/deactivate`),
-  updateUserFullName: (username, fullName)   => request('PUT',  `/admin/users/${username}/full-name`, { fullName }),
-  updateDeviceModelNumber: (udiDI, modelNumber) => request('PUT', `/device/${encodeURIComponent(udiDI)}/model-number`, { modelNumber }),
-  activateUser:   (username) => request('POST', `/admin/users/${username}/activate`),
-  getRepVisits:       (params)      => request('GET',  '/rep-visits?' + new URLSearchParams(params||{}).toString()),
-  createRepVisit:     (data)        => request('POST', '/rep-visits', data),
-  updateRepVisitStatus:(visitId, status) => request('PUT', `/rep-visits/${visitId}/status`, { status }),
+  getUsers:       ()                        => request('GET',  '/admin/users'),
+  createUser:     (payload)                 => request('POST', '/admin/users', payload),
+  setUserActive:  (username, isActive)      => request('PUT',  `/admin/users/${username}/active`, { isActive }),
+  setUserEmail:   (username, email)         => request('PUT',  `/admin/users/${username}/email`, { email }),
+  getUsersByRole: (role)                    => request('GET',  `/users-by-role/${role}`),
 
-  getCases:          (params)     => request('GET',  '/cases?' + new URLSearchParams(params||{}).toString()),
-  createCase:        (data)       => request('POST', '/cases', data),
-  updateCaseStatus:  (caseId, status) => request('PUT',  `/cases/${caseId}/status`, { status }),
-  linkImplantToCase: (caseId, implantId) => request('POST', `/cases/${caseId}/link-implant`, { implantId }),
+  // ── Admin — Practices ─────────────────────────────────────────────
+  getPractices:   ()            => request('GET',    '/admin/practices'),
+  createPractice: (payload)     => request('POST',   '/admin/practices', payload),
+  updatePractice: (id, payload) => request('PUT',    `/admin/practices/${id}`, payload),
+  deletePractice: (id)          => request('DELETE', `/admin/practices/${id}`),
 
-  sendTestEmail:     (to)         => request('POST', '/admin/email/test', { to }),
-  getEmailLog:       ()           => request('GET',  '/admin/email/log'),
-  getEmailUsers:     ()           => request('GET',  '/admin/email/users'),
-  setUserEmail:      (username, email) => request('PUT', `/admin/users/${username}/email`, { email }),
+  // ── Admin — DSO Groups ────────────────────────────────────────────
+  getDsoGroups:   ()        => request('GET',  '/admin/dso-groups'),
+  createDsoGroup: (payload) => request('POST', '/admin/dso-groups', payload),
 
-  getAnalytics:      (params)     => request('GET',  '/admin/analytics?' + new URLSearchParams(params||{}).toString()),
-  getOnboarding:     ()           => request('GET',  '/admin/onboarding'),
-  getAuditLog:       (params)  => request('GET',  '/admin/audit?' + new URLSearchParams(params||{}).toString()),
-  getAuditActions:  ()         => request('GET',  '/admin/audit/actions'),
+  // ── Admin — Dentists ──────────────────────────────────────────────
+  getDentists:      (practiceId) => request('GET',    `/admin/dentists${practiceId ? '?practiceId=' + practiceId : ''}`),
+  createDentist:    (payload)    => request('POST',   '/admin/dentists', payload),
+  updateDentist:    (id, payload)=> request('PUT',    `/admin/dentists/${id}`, payload),
+  setDentistActive: (id, isActive)=> request('PUT',   `/admin/dentists/${id}/active`, { isActive }),
 
-  // ── Users by role (for dropdowns) ────────────────────────────────
-  getUsersByRole: (role) => request('GET', `/users-by-role/${role}`),
+  // ── Admin — Rep Practice Assignments ─────────────────────────────
+  getRepPractices: (username)           => request('GET', `/admin/rep-practices/${username}`),
+  setRepPractices: (username, practices)=> request('POST','/admin/rep-practices', { repUsername: username, practices }),
 
-  // ── Stats & Inventory ────────────────────────────────────────────
-  getChaincodeVersion:  () => request('GET', '/chaincode-version'),
-  getExpiryAlerts:      () => request('GET', '/alerts/expiry'),
-  bulkImport:          (records) => request('POST', '/bulk-import', { records }),
-  getStats:     () => request('GET', '/assets/stats'),
-  getInventory: () => request('GET', '/assets/inventory'),
+  // ── Admin — Analytics / Audit / Onboarding ───────────────────────
+  getAnalytics:  (params) => request('GET', '/admin/analytics?' + new URLSearchParams(params||{}).toString()),
+  getOnboarding: ()       => request('GET', '/admin/onboarding'),
+  getAuditLog:   (params) => request('GET', '/admin/audit?' + new URLSearchParams(params||{}).toString()),
+  getAuditActions: ()     => request('GET', '/admin/audit/actions'),
+  getEmailLog:   ()       => request('GET', '/admin/email/log'),
 
-  // ── Medical Devices ───────────────────────────────────────────────
-  getDevices:       ()        => request('GET',  '/assets/devices'),
-  getDevice:        (udiDI)   => request('GET',  `/device/${udiDI}`),
-  getDeviceHistory: (udiDI)   => request('GET',  `/history/device/${udiDI}`),
-  registerDevice:   (payload) => request('POST', '/device', payload),
-  onboardDevice:    (payload) => request('POST', '/device/onboard', payload),
+  // ── Stats ─────────────────────────────────────────────────────────
+  getStats:        () => request('GET', '/assets/stats'),
+  getExpiryAlerts: () => request('GET', '/alerts/expiry'),
+  getUDICompliance:() => request('GET', '/reports/udi-compliance'),
+  getMDRDeadlines: () => request('GET', '/alerts/mdr-deadlines'),
 
-  // ── Regulatory Clearances ─────────────────────────────────────────
-  getClearances:       ()                      => request('GET',  '/assets/clearances'),
-  issueClearance:      (payload)               => request('POST', '/clearance', payload),
-  revokeClearance:     (clearanceNumber, body) => request('POST', `/clearance/${clearanceNumber}/revoke`, body),
-  getClearanceHistory: (num)                   => request('GET',  `/history/clearance/${num}`),
+  // ── Devices ───────────────────────────────────────────────────────
+  getDevices:      ()        => request('GET',  '/assets/devices'),
+  getDevice:       (udiDI)   => request('GET',  `/device/${encodeURIComponent(udiDI)}`),
+  registerDevice:  (payload) => request('POST', '/device', payload),
+  getDeviceHistory:(udiDI)   => request('GET',  `/history/device/${encodeURIComponent(udiDI)}`),
 
-  // ── ISO 13485 Certificates ────────────────────────────────────────
-  getISO13485:     ()             => request('GET',  '/assets/iso13485'),
-  uploadISO13485:  (payload)      => request('POST', '/iso13485', payload),
-  revokeISO13485:  (certId, body) => request('POST', `/iso13485/${certId}/revoke`, body),
+  // ── Clearances ────────────────────────────────────────────────────
+  getClearances:   ()                      => request('GET',  '/assets/clearances'),
+  issueClearance:  (payload)               => request('POST', '/clearance', payload),
+  revokeClearance: (num, body)             => request('POST', `/clearance/${num}/revoke`, body),
 
-  // ── Device Lots ───────────────────────────────────────────────────
-  getLots:       ()             => request('GET',  '/assets/lots'),
-  createLot:     (payload)      => request('POST', '/lot', payload),
-  releaseLot:    (lotId, body)  => request('POST', `/lot/${lotId}/release`, body || {}),
-  recallLot:     (lotId, body)  => request('POST', `/lot/${lotId}/recall`, body),
-  flagBackorder: (lotId, body)  => request('POST', `/lot/${lotId}/backorder`, body),
-  getLotHistory: (lotId)        => request('GET',  `/history/lot/${lotId}`),
+  // ── ISO 13485 ─────────────────────────────────────────────────────
+  getISO13485:    ()        => request('GET',  '/assets/iso13485'),
+  uploadISO13485: (payload) => request('POST', '/iso13485', payload),
+
+  // ── Lots ──────────────────────────────────────────────────────────
+  getLots:      ()             => request('GET',  '/assets/lots'),
+  createLot:    (payload)      => request('POST', '/lot', payload),
+  releaseLot:   (lotId, body)  => request('POST', `/lot/${lotId}/release`, body || {}),
+  recallLot:    (lotId, body)  => request('POST', `/lot/${lotId}/recall`, body),
+  getLotHistory:(lotId)        => request('GET',  `/history/lot/${lotId}`),
 
   // ── Consignments ──────────────────────────────────────────────────
-  getConsignments:       (params)              => request('GET',  `/assets/consignments${params ? '?' + new URLSearchParams(params) : ''}`),
-  createConsignment:     (payload)             => request('POST', '/consignment', payload),
-  returnConsignment:     (consignmentId, body) => request('POST', `/consignment/${consignmentId}/return`, body),
-  openedNotImplanted:    (consignmentId, body) => request('POST', `/consignment/${consignmentId}/opened-not-implanted`, body),
-  recallConsignment:     (consignmentId, body) => request('POST', `/consignment/${consignmentId}/recall`, body),
-  getConsignmentHistory: (consignmentId)       => request('GET',  `/history/consignment/${consignmentId}`),
+  getConsignments:   (params)              => request('GET',  `/assets/consignments${params ? '?' + new URLSearchParams(params) : ''}`),
+  createConsignment: (payload)             => request('POST', '/consignment', payload),
+  returnConsignment: (consignmentId, body) => request('POST', `/consignment/${consignmentId}/return`, body),
 
-  // ── Implant Records ───────────────────────────────────────────────
-  getImplantsByPatient:     (patientId)       => request('GET',  `/assets/implants?patientId=${encodeURIComponent(patientId)}`),
-  getImplantsByPatientHash: (hash)            => request('GET',  `/assets/implants?patientIdHash=${encodeURIComponent(hash)}`),
-  getAllImplants:            ()                => request('GET',  '/assets/implants/all'),
-  getImplantsByHospital:    (hospitalId)      => request('GET',  `/assets/implants/by-hospital${hospitalId ? '?hospitalId=' + encodeURIComponent(hospitalId) : ''}`),
-  getImplantsBySurgeon:     (surgeonId)       => request('GET',  `/assets/implants/by-surgeon${surgeonId ? '?surgeonId=' + encodeURIComponent(surgeonId) : ''}`),
-  getImplantsByDevice:      (udiDI)           => request('GET',  `/assets/implants/by-device/${encodeURIComponent(udiDI)}`),
-  recordImplant:            (payload)         => request('POST', '/implant', payload),
-  recordExplant:            (implantId, body) => request('POST', `/implant/${implantId}/explant`, body),
-  getImplantHistory:        (implantId)       => request('GET',  `/history/implant/${implantId}`),
+  // ── 3-Stage Implant Recording ─────────────────────────────────────
+  recordImplantPost: (payload)              => request('POST', '/implant/post', payload),
+  recordAbutment:    (implantId, payload)   => request('POST', `/implant/${implantId}/abutment`, payload),
+  recordCrown:       (implantId, payload)   => request('POST', `/implant/${implantId}/crown`, payload),
+  getImplants:       ()                     => request('GET',  '/assets/implants'),
+  getImplantHistory: (implantId)            => request('GET',  `/history/implant/${implantId}`),
 
-  // ── Adverse Events (MDR) ──────────────────────────────────────────
-  recordAdverseEvent:  (payload) => request('POST', '/adverse-event', payload),
-  getAdverseEvents:    ()        => request('GET',  '/assets/adverse-events'),
+  // ── Lab Work ──────────────────────────────────────────────────────
+  getLabWork:        (params)              => request('GET',  '/lab-work?' + new URLSearchParams(params||{}).toString()),
+  createLabWork:     (payload)             => request('POST', '/lab-work', payload),
+  updateLabWorkStatus:(labWorkId, payload) => request('PUT',  `/lab-work/${labWorkId}/status`, payload),
 
-  // ── Recall & Infection Prevention ────────────────────────────────
-  getPatientsByLot:             (lotNumber) => request('GET', `/recall/patients-by-lot/${encodeURIComponent(lotNumber)}`),
-  getActiveImplantsByRecalledLot:(lotNumber) => request('GET', `/recall/active-implants-by-lot/${encodeURIComponent(lotNumber)}`),
+  // ── Follow-ups ────────────────────────────────────────────────────
+  getFollowUps:       (params)              => request('GET',  '/follow-ups?' + new URLSearchParams(params||{}).toString()),
+  createFollowUp:     (payload)             => request('POST', '/follow-up', payload),
+  updateFollowUpStatus:(followUpId, payload)=> request('PUT',  `/follow-up/${followUpId}/status`, payload),
 
-  // ── Admin — Organizations ─────────────────────────────────────────
-  getOrganizations:   ()            => request('GET',    '/admin/organizations'),
-  createOrganization: (payload)     => request('POST',   '/admin/organizations', payload),
-  updateOrganization: (id, payload) => request('PUT',    `/admin/organizations/${id}`, payload),
-  deleteOrganization: (id)          => request('DELETE', `/admin/organizations/${id}`),
+  // ── Treatment Cases ───────────────────────────────────────────────
+  getCases:          (params)             => request('GET',  '/cases?' + new URLSearchParams(params||{}).toString()),
+  createCase:        (payload)            => request('POST', '/cases', payload),
+  updateCaseStatus:  (caseId, status)     => request('PUT',  `/cases/${caseId}/status`, { status }),
+  updateCasePhase:   (caseId, phase)      => request('PUT',  `/cases/${caseId}/phase`, { phase }),
+  linkImplantToCase: (caseId, implantId)  => request('POST', `/cases/${caseId}/link-implant`, { implantId }),
 
-  // ── Admin — Hospitals ─────────────────────────────────────────────
-  getHospitals:   ()            => request('GET',    '/admin/hospitals'),
-  createHospital: (payload)     => request('POST',   '/admin/hospitals', payload),
-  updateHospital: (id, payload) => request('PUT',    `/admin/hospitals/${id}`, payload),
-  deleteHospital: (id)          => request('DELETE', `/admin/hospitals/${id}`),
+  // ── Recall ────────────────────────────────────────────────────────
+  getPatientsByLot:         (lotNumber) => request('GET',  `/recall/patients-by-lot/${encodeURIComponent(lotNumber)}`),
+  recordRecallNotification: (payload)   => request('POST', '/recall/notification', payload),
 
-  // ── Admin — Surgeons ──────────────────────────────────────────────
-  getSurgeons:   (hospitalId)   => request('GET',    `/admin/surgeons${hospitalId ? '?hospitalId=' + encodeURIComponent(hospitalId) : ''}`),
-  createSurgeon: (payload)      => request('POST',   '/admin/surgeons', payload),
-  updateSurgeon: (id, payload)  => request('PUT',    `/admin/surgeons/${id}`, payload),
-  deleteSurgeon: (id)           => request('DELETE', `/admin/surgeons/${id}`),
+  // ── Rep Visits ────────────────────────────────────────────────────
+  getRepVisits:        (params)           => request('GET',  '/rep-visits?' + new URLSearchParams(params||{}).toString()),
+  createRepVisit:      (payload)          => request('POST', '/rep-visits', payload),
+  updateRepVisitStatus:(visitId, status)  => request('PUT',  `/rep-visits/${visitId}/status`, { status }),
 
-  // ── Admin — Lookup Values ─────────────────────────────────────────
-  getLookupValues:  (category) => request('GET',    `/admin/lookup${category ? '?category=' + encodeURIComponent(category) : ''}`),
-  createLookupValue:(payload)  => request('POST',   '/admin/lookup', payload),
-  deleteLookupValue:(id)       => request('DELETE', `/admin/lookup/${id}`),
+  // ── Practices (public routes) ─────────────────────────────────────
+  getPracticesList: () => request('GET', '/practices'),
+  getDentistsList:  (params) => request('GET', '/dentists?' + new URLSearchParams(params||{}).toString()),
+  getLookupValues:  (category) => request('GET', `/lookup/${category}`),
 
-  // ── Device Submissions (manufacturer → FDA approval) ─────────────
-  submitDevice:           (payload)     => request('POST', '/device-submissions', payload),
-  getDeviceSubmissions:   (status)      => request('GET',  `/device-submissions${status ? '?status=' + status : ''}`),
-  reviewDeviceSubmission: (id, payload) => request('POST', `/device-submissions/${id}/review`, payload),
-
-  // ── Brownfield Onboarding Requests ───────────────────────────────
-  createOnboardingRequest: (payload)     => request('POST', '/onboarding-requests', payload),
-  getOnboardingRequests:   (status)      => request('GET',  `/onboarding-requests${status ? '?status=' + status : ''}`),
-  reviewOnboardingRequest: (id, payload) => request('POST', `/onboarding-requests/${id}/review`, payload),
-
-  // ── ISO Cert Uploads ──────────────────────────────────────────────
-  createIsoCertUpload: (payload)     => request('POST', '/iso-cert-uploads', payload),
-  getIsoCertUploads:   (mfrId)       => request('GET',  `/iso-cert-uploads${mfrId ? '?manufacturerId=' + encodeURIComponent(mfrId) : ''}`),
-  markIsoCertOnChain:  (id, payload) => request('POST', `/iso-cert-uploads/${id}/mark-on-chain`, payload),
-
-  // ── Consignment Transfer ─────────────────────────────────────────
-  transferConsignment: (consignmentId, body) => request('POST', `/consignment/${consignmentId}/transfer`, body),
-
-  // ── AI Proxy ──────────────────────────────────────────────────────
-  // Calls backend proxy which forwards to Anthropic — keeps API key server-side
-  aiComplete: (prompt, maxTokens) => request('POST', '/ai/complete', { prompt, maxTokens: maxTokens || 1000 }),
-
-  // ── Rep Hospital Assignments ──────────────────────────────────────
-  // Admin assigns which hospitals a rep can serve — enforced on consignment creation
-  getRepHospitals:  (username)            => request('GET', `/admin/rep-hospitals/${username}`),
-  setRepHospitals:  (username, hospitals) => request('PUT', `/admin/rep-hospitals/${username}`, { hospitals }),
-
-  getUDICompliance:  ()           => request('GET',  '/reports/udi-compliance'),
-  getMDRDeadlines:   ()           => request('GET',  '/alerts/mdr-deadlines'),
-
-  // ── Recall Notifications ─────────────────────────────────────────────
-  recordRecallNotification: (payload)    => request('POST', '/recall/notification', payload),
-  bulkRecallNotification:   (payload)    => request('POST', '/recall/notifications/bulk', payload),
-  getRecallNotifications:   (lotNumber)  => request('GET',  `/recall/notifications/${encodeURIComponent(lotNumber)}`),
-
-  // ── Public Verification (no auth required) ────────────────────────
+  // ── Public Verification ───────────────────────────────────────────
   verifyDevice: (udiDI) => request('GET', `/verify/device/${encodeURIComponent(udiDI)}`),
-  verifyLot:    (lotId) => request('GET', `/verify/lot/${encodeURIComponent(lotId)}`),
+
+  getChaincodeVersion: () => request('GET', '/chaincode-version'),
 };

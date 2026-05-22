@@ -38,7 +38,7 @@ export default function CasesPage() {
   const [loading,      setLoading]      = useState(false);
   const [date,         setDate]         = useState(new Date().toISOString().split('T')[0]);
   const [consignments, setConsignments] = useState([]);
-  const [surgeons,     setSurgeons]     = useState([]);
+  const [dentists,     setDentists]     = useState([]);
   const [msg,          setMsg]          = useState(null);
   const [showCreate,   setShowCreate]   = useState(false);
   const [createBusy,   setCreateBusy]   = useState(false);
@@ -48,8 +48,8 @@ export default function CasesPage() {
   const [caseForm, setCaseForm] = useState({
     procedureDate: today,
     procedureTime: '',
-    orRoom: '',
-    surgeonId: '',
+    treatmentRoom: '',
+    dentistId: '',
     procedureType: '',
     deviceCategory: '',
     patientMrn: '',
@@ -58,12 +58,12 @@ export default function CasesPage() {
   });
   const setF = (k,v) => setCaseForm(f=>({...f,[k]:v}));
 
-  // When surgeon changes → auto-fill device category
-  const handleSurgeonChange = (surgeonId) => {
-    setF('surgeonId', surgeonId);
-    const surgeon = surgeons.find(s=>s.surgeon_id===surgeonId);
-    if (surgeon?.specialty && SPECIALTY_TO_CATEGORY[surgeon.specialty]) {
-      const cat = SPECIALTY_TO_CATEGORY[surgeon.specialty];
+  // When dentist changes → auto-fill device category
+  const handleDentistChange = (dentistId) => {
+    setF('dentistId', dentistId);
+    const dentist = dentists.find(s=>s.dentist_id===dentistId);
+    if (dentist?.specialty && SPECIALTY_TO_CATEGORY[dentist.specialty]) {
+      const cat = SPECIALTY_TO_CATEGORY[dentist.specialty];
       setF('deviceCategory', cat);
       setF('procedureType', ''); // reset so user picks from filtered list
     }
@@ -86,8 +86,8 @@ export default function CasesPage() {
     setLoading(true);
     try {
       const params = { date };
-      if (user?.role==='surgeon') params.surgeonId = user.username;
-      else if (user?.hospitalId) params.hospitalId = user.hospitalId;
+      if (user?.role==='dentist') params.dentistId = user.username;
+      else if (user?.practiceId) params.practiceId = user.practiceId;
       setCases(Array.isArray(await api.getCases(params)) ? await api.getCases(params) : []);
     } catch {}
     finally { setLoading(false); }
@@ -96,16 +96,16 @@ export default function CasesPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    if (!user?.hospitalId) return;
+    if (!user?.practiceId) return;
     api.getConsignments({}).then(d=>setConsignments((d||[]).filter(c=>c.status==='active'))).catch(()=>{});
-    api.getSurgeons(user?.hospitalId).then(setSurgeons).catch(()=>{});
+    api.getDentists(user?.practiceId).then(setDentists).catch(()=>{});
   }, [user]);
 
   const prevDay = () => { const d=new Date(date+'T12:00:00'); d.setDate(d.getDate()-1); setDate(d.toISOString().split('T')[0]); };
   const nextDay = () => { const d=new Date(date+'T12:00:00'); d.setDate(d.getDate()+1); setDate(d.toISOString().split('T')[0]); };
 
   const generateCaseId = () => {
-    const hosp=(user?.hospitalId||'HOSP').split(' ')[0].substring(0,3).toUpperCase();
+    const hosp=(user?.practiceId||'HOSP').split(' ')[0].substring(0,3).toUpperCase();
     return `CASE-${hosp}-${Date.now().toString(36).toUpperCase()}`;
   };
 
@@ -114,13 +114,13 @@ export default function CasesPage() {
     try {
       const caseId = generateCaseId();
       await api.createCase({ caseId, procedureDate:caseForm.procedureDate, procedureTime:caseForm.procedureTime||null,
-        orRoom:caseForm.orRoom, hospitalId:user?.hospitalId||'', surgeonId:caseForm.surgeonId,
+        treatmentRoom:caseForm.treatmentRoom, practiceId:user?.practiceId||'', dentistId:caseForm.dentistId,
         procedureType:caseForm.procedureType, deviceCategory:caseForm.deviceCategory,
         requiredDevices:caseForm.requiredDevices, patientMrn:caseForm.patientMrn, notes:caseForm.notes });
       setMsg({ type:'success', text:`Case ${caseId} scheduled` });
       setTimeout(()=>setMsg(null), 3000);
       setShowCreate(false);
-      setCaseForm({ procedureDate:today, procedureTime:'', orRoom:'', surgeonId:'', procedureType:'', deviceCategory:'', patientMrn:'', notes:'', requiredDevices:[] });
+      setCaseForm({ procedureDate:today, procedureTime:'', treatmentRoom:'', dentistId:'', procedureType:'', deviceCategory:'', patientMrn:'', notes:'', requiredDevices:[] });
       if (caseForm.procedureDate===date) load();
     } catch (err) { setMsg({ type:'error', text:err.message }); }
     finally { setCreateBusy(false); }
@@ -146,8 +146,8 @@ export default function CasesPage() {
   return (
     <>
       <div className="page-header">
-        <h2>📅 OR Schedule</h2>
-        <p>Operating room cases and pre-pull device requirements — {user?.hospitalId||'All Hospitals'}</p>
+        <h2>📅 Treatment Cases</h2>
+        <p>Operating room cases and pre-pull device requirements — {user?.practiceId||'All Practices'}</p>
       </div>
 
       {msg && <div className={`alert alert-${msg.type}`} style={{marginBottom:12}}>{msg.type==='error'?'⚠':'✓'} {msg.text}</div>}
@@ -201,7 +201,7 @@ export default function CasesPage() {
             <h3 style={{marginBottom:20}}>📅 Schedule New Case</h3>
             <form onSubmit={handleCreateCase}>
 
-              {/* Row 1: Date, Time, OR Room */}
+              {/* Row 1: Date, Time, Treatment Room */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:12}}>
                 <div className="form-group" style={{marginBottom:0}}>
                   <label>Procedure Date</label>
@@ -212,25 +212,25 @@ export default function CasesPage() {
                   <input type="time" value={caseForm.procedureTime} onChange={e=>setF('procedureTime',e.target.value)}/>
                 </div>
                 <div className="form-group" style={{marginBottom:0}}>
-                  <label>OR Room <span style={{fontSize:10,color:'var(--text-muted)'}}>optional</span></label>
-                  <input placeholder="e.g. OR-1, OR-2" value={caseForm.orRoom} onChange={e=>setF('orRoom',e.target.value)}/>
+                  <label>Treatment Room <span style={{fontSize:10,color:'var(--text-muted)'}}>optional</span></label>
+                  <input placeholder="e.g. OR-1, OR-2" value={caseForm.treatmentRoom} onChange={e=>setF('treatmentRoom',e.target.value)}/>
                 </div>
               </div>
 
-              {/* Row 2: Surgeon → auto-fills category */}
+              {/* Row 2: Dentist → auto-fills category */}
               <div className="form-group" style={{marginBottom:12}}>
-                <label>Surgeon</label>
-                <select value={caseForm.surgeonId} onChange={e=>handleSurgeonChange(e.target.value)}>
-                  <option value="">— Select surgeon —</option>
-                  {surgeons.map(s=>(
-                    <option key={s.surgeon_id} value={s.surgeon_id}>
-                      {s.full_name} ({s.specialty||s.surgeon_id})
+                <label>Dentist</label>
+                <select value={caseForm.dentistId} onChange={e=>handleDentistChange(e.target.value)}>
+                  <option value="">— Select dentist —</option>
+                  {dentists.map(s=>(
+                    <option key={s.dentist_id} value={s.dentist_id}>
+                      {s.full_name} ({s.specialty||s.dentist_id})
                     </option>
                   ))}
                 </select>
-                {caseForm.surgeonId && (() => {
-                  const s = surgeons.find(x=>x.surgeon_id===caseForm.surgeonId);
-                  return s ? <div style={{fontSize:11,color:'var(--text-muted)',marginTop:3}}>🔬 {s.specialty} · 🏥 {(s.hospitals||[]).join(', ')}</div> : null;
+                {caseForm.dentistId && (() => {
+                  const s = dentists.find(x=>x.dentist_id===caseForm.dentistId);
+                  return s ? <div style={{fontSize:11,color:'var(--text-muted)',marginTop:3}}>🔬 {s.specialty} · 🏥 {(s.practices||[]).join(', ')}</div> : null;
                 })()}
               </div>
 
@@ -256,7 +256,7 @@ export default function CasesPage() {
                         {(PROCEDURES_BY_CATEGORY[caseForm.deviceCategory]||[]).map(p=><option key={p} value={p}>{p}</option>)}
                       </select>
                     : <input placeholder="Select device category first" value={caseForm.procedureType}
-                        onChange={e=>setF('procedureType',e.target.value)} disabled={!caseForm.deviceCategory&&surgeons.length>0}/>
+                        onChange={e=>setF('procedureType',e.target.value)} disabled={!caseForm.deviceCategory&&dentists.length>0}/>
                   }
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function CasesPage() {
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={()=>{
                   setShowCreate(false);
-                  setCaseForm({ procedureDate:today, procedureTime:'', orRoom:'', surgeonId:'',
+                  setCaseForm({ procedureDate:today, procedureTime:'', treatmentRoom:'', dentistId:'',
                     procedureType:'', deviceCategory:'', patientMrn:'', notes:'', requiredDevices:[] });
                   setReqDevice({ udiDI:'', deviceName:'', quantity:'1' });
                 }}>Cancel</button>
@@ -381,9 +381,9 @@ export default function CasesPage() {
                           {cs.procedure_type||'—'}
                         </div>
                         <div style={{display:'flex',gap:16,fontSize:12,color:'var(--text-secondary)',flexWrap:'wrap'}}>
-                          {cs.surgeon_id && <span>👨‍⚕️ {cs.surgeon_id}</span>}
+                          {cs.dentist_id && <span>👨‍⚕️ {cs.dentist_id}</span>}
                           {cs.patient_mrn && <span>🏷 {cs.patient_mrn}</span>}
-                          <span>🏥 {cs.hospital_id}</span>
+                          <span>🏥 {cs.practice_id}</span>
                           <span style={{color:'var(--text-muted)'}}>by {cs.created_by}</span>
                         </div>
                         {cs.notes && <div style={{fontSize:12,color:'var(--text-muted)',marginTop:4,fontStyle:'italic'}}>{cs.notes}</div>}
@@ -393,7 +393,7 @@ export default function CasesPage() {
                           <button className="btn btn-ghost btn-sm" style={{color:'var(--accent-amber)',borderColor:'var(--accent-amber)'}}
                             onClick={()=>updateStatus(cs.case_id,'in_progress')}>▶ Start</button>
                           <button className="btn btn-ghost btn-sm" style={{color:'var(--accent-blue)',borderColor:'var(--accent-blue)'}}
-                            onClick={()=>navigate('/nurse')}>+ Record Implant</button>
+                            onClick={()=>navigate('/dental_assistant')}>+ Record Implant</button>
                           <button className="btn btn-ghost btn-sm" style={{color:'var(--accent-red)',borderColor:'var(--accent-red)'}}
                             onClick={()=>{ if(window.confirm('Cancel this case?')) updateStatus(cs.case_id,'cancelled'); }}>✕ Cancel</button>
                         </>}
@@ -404,7 +404,7 @@ export default function CasesPage() {
                             title={!cs.implant_ids?.length?'Record at least one implant first':'Mark case complete'}
                             onClick={()=>updateStatus(cs.case_id,'completed')}>✓ Complete</button>
                           <button className="btn btn-ghost btn-sm" style={{color:'var(--accent-blue)',borderColor:'var(--accent-blue)'}}
-                            onClick={()=>navigate('/nurse')}>+ Record Implant</button>
+                            onClick={()=>navigate('/dental_assistant')}>+ Record Implant</button>
                         </>}
                       </div>
                     </div>

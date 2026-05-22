@@ -23,7 +23,7 @@ export default function DistributorPage() {
 
   const [consignments, setConsignments] = useState([]);
   const [lots,         setLots]         = useState([]);
-  const [hospitals,    setHospitals]    = useState([]);
+  const [practices,    setPractices]    = useState([]);
   const [tab,          setTab]          = useState('inventory');
   const [loading,      setLoading]      = useState(true);
   const [msg,          setMsg]          = useState(null);
@@ -40,7 +40,7 @@ export default function DistributorPage() {
 
   // Transfer modal
   const [transferModal, setTransferModal] = useState(null);
-  const [transferForm,  setTransferForm]  = useState({ toHospitalId:'', newConsignmentId:'', newLocation:'', quantity:'', reason:'' });
+  const [transferForm,  setTransferForm]  = useState({ toPracticeId:'', newConsignmentId:'', newLocation:'', quantity:'', reason:'' });
   const [transferBusy,  setTransferBusy]  = useState(false);
   const [transferMsg,   setTransferMsg]   = useState(null);
 
@@ -57,18 +57,18 @@ export default function DistributorPage() {
   const [visitMsg,     setVisitMsg]     = useState(null);
   const [visitFilter,  setVisitFilter]  = useState('upcoming'); // 'upcoming' | 'past' | 'all'
   const [visitForm,    setVisitForm]    = useState({
-    hospitalId:'', visitDate:'', visitTime:'', purpose:'', caseId:'', contactName:'', notes:'',
+    practiceId:'', visitDate:'', visitTime:'', purpose:'', caseId:'', contactName:'', notes:'',
   });
   const setVF = (k,v) => setVisitForm(f=>({...f,[k]:v}));
 
   // Create consignment form
-  const [form, setForm] = useState({ consignmentId:'', lotId:'', hospitalId:'', quantity:'', location:'' });
+  const [form, setForm] = useState({ consignmentId:'', lotId:'', practiceId:'', quantity:'', location:'' });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const today = new Date().toISOString().split('T')[0];
   const [consignmentSearch, setConsignmentSearch] = useState('');
-  const [assignedHospitals, setAssignedHospitals] = useState([]);
-  const [hospLoaded,        setHospLoaded]         = useState(false);
+  const [assignedPractices, setAssignedPractices] = useState([]);
+  const [practiceLoaded,        setPracticeLoaded]         = useState(false);
 
   const generateVisitId = () => {
     const rep = (user?.username||'REP').substring(0,4).toUpperCase();
@@ -77,7 +77,7 @@ export default function DistributorPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    api.getHospitals().then(h=>setHospitals(h||[])).catch(()=>{});
+    api.getPracticesList().then(h=>setPractices(h||[])).catch(()=>{});
     try {
       const [c, l] = await Promise.allSettled([
         api.getConsignments({ repId: user?.username }),
@@ -98,9 +98,9 @@ export default function DistributorPage() {
   useEffect(() => {
     refresh();
     if (user?.username) {
-      api.getRepHospitals(user.username)
-        .then(h=>{ setAssignedHospitals(h||[]); setHospLoaded(true); })
-        .catch(()=>setHospLoaded(true));
+      api.getRepPractices(user.username)
+        .then(h=>{ setAssignedPractices(h||[]); setPracticeLoaded(true); })
+        .catch(()=>setPracticeLoaded(true));
     }
   }, [refresh, user]);
 
@@ -111,9 +111,9 @@ export default function DistributorPage() {
     e.preventDefault(); setBusy(true); setMsg(null);
     try {
       await api.createConsignment(form);
-      setMsg({ type:'success', text:'Consignment "'+form.consignmentId+'" created at "'+form.hospitalId+'".' });
+      setMsg({ type:'success', text:'Consignment "'+form.consignmentId+'" created at "'+form.practiceId+'".' });
       setTimeout(()=>setMsg(null), 3000);
-      setForm({ consignmentId:'', lotId:'', hospitalId:'', quantity:'', location:'' });
+      setForm({ consignmentId:'', lotId:'', practiceId:'', quantity:'', location:'' });
       refresh();
     } catch (err) { setMsg({ type:'error', text:err.message }); }
     finally { setBusy(false); }
@@ -124,18 +124,18 @@ export default function DistributorPage() {
 
   const openTransferModal = (id) => {
     setTransferModal(id);
-    setTransferForm({ toHospitalId:'', newConsignmentId:id+'-TRF-'+Date.now().toString().slice(-4), newLocation:'', quantity:'', reason:'' });
+    setTransferForm({ toPracticeId:'', newConsignmentId:id+'-TRF-'+Date.now().toString().slice(-4), newLocation:'', quantity:'', reason:'' });
     setTransferMsg(null);
   };
   const closeTransferModal = () => { setTransferModal(null); setTransferMsg(null); };
 
   const handleTransfer = async () => {
-    const { toHospitalId, newConsignmentId, newLocation, quantity, reason } = transferForm;
-    if (!toHospitalId||!newConsignmentId||!newLocation||!quantity||!reason) return;
+    const { toPracticeId, newConsignmentId, newLocation, quantity, reason } = transferForm;
+    if (!toPracticeId||!newConsignmentId||!newLocation||!quantity||!reason) return;
     setTransferBusy(true); setTransferMsg(null);
     try {
-      await api.transferConsignment(transferModal, { toHospitalId, newConsignmentId, newLocation, quantity:parseInt(quantity), reason });
-      setMsg({ type:'success', text:quantity+' unit(s) transferred to '+toHospitalId+'.' });
+      await api.returnConsignment(transferModal, { toPracticeId, newConsignmentId, newLocation, quantity:parseInt(quantity), reason });
+      setMsg({ type:'success', text:quantity+' unit(s) transferred to '+toPracticeId+'.' });
       setTimeout(()=>setMsg(null), 3000);
       closeTransferModal(); refresh();
     } catch (err) { setTransferMsg({ type:'error', text:err.message }); }
@@ -171,10 +171,10 @@ export default function DistributorPage() {
     e.preventDefault(); setVisitBusy(true); setVisitMsg(null);
     try {
       await api.createRepVisit({ visitId:generateVisitId(), ...visitForm });
-      setVisitMsg({ type:'success', text:'Visit scheduled at '+visitForm.hospitalId+'.' });
+      setVisitMsg({ type:'success', text:'Visit scheduled at '+visitForm.practiceId+'.' });
       setTimeout(()=>setVisitMsg(null), 3000);
       setShowVisitForm(false);
-      setVisitForm({ hospitalId:'', visitDate:'', visitTime:'', purpose:'', caseId:'', contactName:'', notes:'' });
+      setVisitForm({ practiceId:'', visitDate:'', visitTime:'', purpose:'', caseId:'', contactName:'', notes:'' });
       loadVisits();
     } catch (err) { setVisitMsg({ type:'error', text:err.message }); }
     finally { setVisitBusy(false); }
@@ -199,7 +199,7 @@ export default function DistributorPage() {
       const dailyRate = daysSince ? (used/daysSince) : null;
       const daysLeft = dailyRate > 0 ? Math.floor(avail/dailyRate) : null;
       return { consignmentId:c.consignmentId, device:c.deviceName, deviceCategory:c.deviceCategory,
-        hospital:c.hospitalId, totalQty:c.quantity, usedQty:used, availableQty:avail,
+        practice:c.practiceId, totalQty:c.quantity, usedQty:used, availableQty:avail,
         dailyUsageRate:dailyRate?parseFloat(dailyRate.toFixed(3)):0,
         estimatedDaysRemaining:daysLeft, expiryDate:c.expiryDate,
         stockPct:c.quantity>0?Math.round((avail/c.quantity)*100):0 };
@@ -232,9 +232,9 @@ export default function DistributorPage() {
     if (!consignmentSearch.trim()) return true;
     const q = consignmentSearch.toLowerCase();
     return (c.consignmentId||'').toLowerCase().includes(q)||(c.deviceName||'').toLowerCase().includes(q)||
-           (c.hospitalId||'').toLowerCase().includes(q)||(c.location||'').toLowerCase().includes(q);
+           (c.practiceId||'').toLowerCase().includes(q)||(c.location||'').toLowerCase().includes(q);
   });
-  const byHospital = filteredConsignments.reduce((acc,c)=>{ if(!acc[c.hospitalId]) acc[c.hospitalId]=[]; acc[c.hospitalId].push(c); return acc; },{});
+  const byPractice = filteredConsignments.reduce((acc,c)=>{ if(!acc[c.practiceId]) acc[c.practiceId]=[]; acc[c.practiceId].push(c); return acc; },{});
 
   const filteredVisits = visits.filter(v => {
     if (visitFilter==='upcoming') return v.status==='scheduled'||v.status==='checked_in';
@@ -263,20 +263,20 @@ export default function DistributorPage() {
     orthopedic:      {bg:'rgba(245,158,11,0.06)',border:'rgba(245,158,11,0.15)',badge:'badge-amber',  label:'🦴 Orthopedic'},
   };
 
-  const allowedHospitals = assignedHospitals.length>0 ? hospitals.filter(h=>assignedHospitals.includes(h.name)) : hospitals;
+  const allowedPractices = assignedPractices.length>0 ? practices.filter(h=>assignedPractices.includes(h.name)) : practices;
 
   return (
     <>
       <div className="page-header">
         <h2>🚚 Distributor / Rep Portal</h2>
-        <p>Manage consignment inventory across hospital accounts</p>
+        <p>Manage consignment inventory across practice accounts</p>
       </div>
 
       <ExpiryAlertBanner />
 
       {recalledCount>0 && (
         <div className="alert alert-error" style={{marginBottom:12}}>
-          ⚠ <strong>{recalledCount} recalled consignment{recalledCount>1?'s':''}</strong> — contact affected hospitals immediately.
+          ⚠ <strong>{recalledCount} recalled consignment{recalledCount>1?'s':''}</strong> — contact affected practices immediately.
         </div>
       )}
       {msg && <div className={'alert alert-'+msg.type} style={{marginBottom:12}}>{msg.type==='error'?'⚠':'✓'} {msg.text}</div>}
@@ -286,13 +286,13 @@ export default function DistributorPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={closeTransferModal}>
           <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:28,width:460}} onClick={e=>e.stopPropagation()}>
             <h3 style={{marginBottom:4}}>🏥 Emergency Transfer — {transferModal}</h3>
-            <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:16}}>Move this consignment to another hospital in your territory.</p>
+            <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:16}}>Move this consignment to another practice in your territory.</p>
             {transferMsg && <div className={'alert alert-'+transferMsg.type} style={{marginBottom:12}}>⚠ {transferMsg.text}</div>}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
               <div className="form-group" style={{marginBottom:0,gridColumn:'span 2'}}>
-                <label>Destination Hospital</label>
-                <input list="transfer-hosp-list" placeholder="Type or select hospital..." value={transferForm.toHospitalId} onChange={e=>setTransferForm(f=>({...f,toHospitalId:e.target.value}))}/>
-                <datalist id="transfer-hosp-list">{allowedHospitals.map(h=><option key={h.id} value={h.name}/>)}</datalist>
+                <label>Destination Practice</label>
+                <input list="transfer-hosp-list" placeholder="Type or select practice..." value={transferForm.toPracticeId} onChange={e=>setTransferForm(f=>({...f,toPracticeId:e.target.value}))}/>
+                <datalist id="transfer-hosp-list">{allowedPractices.map(h=><option key={h.id} value={h.name}/>)}</datalist>
               </div>
               <div className="form-group" style={{marginBottom:0}}>
                 <label>Units to Transfer</label>
@@ -313,7 +313,7 @@ export default function DistributorPage() {
             </div>
             <div style={{display:'flex',gap:8}}>
               <button className="btn btn-primary" style={{flex:1,background:'var(--accent-purple)'}}
-                disabled={transferBusy||!transferForm.toHospitalId||!transferForm.quantity||!transferForm.newLocation||!transferForm.reason}
+                disabled={transferBusy||!transferForm.toPracticeId||!transferForm.quantity||!transferForm.newLocation||!transferForm.reason}
                 onClick={handleTransfer}>
                 {transferBusy?<><span className="spinner" style={{width:14,height:14}}/> Transferring…</>:'🏥 Confirm Transfer'}
               </button>
@@ -359,14 +359,14 @@ export default function DistributorPage() {
         ))}
       </div>
 
-      {hospLoaded && assignedHospitals.length>0 && (
+      {practiceLoaded && assignedPractices.length>0 && (
         <div className="alert alert-info" style={{marginBottom:12,fontSize:12}}>
-          🏥 <strong>Your territory:</strong> {assignedHospitals.join(' · ')} — consignments restricted to these hospitals.
+          🏥 <strong>Your territory:</strong> {assignedPractices.join(' · ')} — consignments restricted to these practices.
         </div>
       )}
-      {hospLoaded && assignedHospitals.length===0 && (
+      {practiceLoaded && assignedPractices.length===0 && (
         <div className="alert alert-amber" style={{marginBottom:12,fontSize:12}}>
-          ⚠ <strong>No hospitals assigned yet.</strong> Contact admin to assign your territory.
+          ⚠ <strong>No practices assigned yet.</strong> Contact admin to assign your territory.
         </div>
       )}
 
@@ -385,7 +385,7 @@ export default function DistributorPage() {
         <div className="card">
           <div className="card-header">
             <span className="card-title">📦 Create Consignment</span>
-            <span className="badge badge-cyan">Rep-owned inventory placed at hospital</span>
+            <span className="badge badge-cyan">Rep-owned inventory placed at practice</span>
           </div>
           <form onSubmit={submitConsignment}>
             <div style={{display:'grid',gridTemplateColumns:'repeat(10,1fr)',gap:16,marginBottom:14}}>
@@ -406,16 +406,16 @@ export default function DistributorPage() {
                 <input type="number" min="1" max={selectedLot?.remainingQuantity||9999} placeholder="e.g. 20" value={form.quantity} onChange={e=>set('quantity',e.target.value)} required/>
               </div>
               <div className="form-group" style={{gridColumn:'span 5'}}>
-                <label>Hospital</label>
-                <input list="hospital-list" value={form.hospitalId} onChange={e=>set('hospitalId',e.target.value)} placeholder="Type or select hospital..." required/>
-                <datalist id="hospital-list">{allowedHospitals.map(h=><option key={h.id} value={h.name}/>)}</datalist>
+                <label>Practice</label>
+                <input list="practice-list" value={form.practiceId} onChange={e=>set('practiceId',e.target.value)} placeholder="Type or select practice..." required/>
+                <datalist id="practice-list">{allowedPractices.map(h=><option key={h.id} value={h.name}/>)}</datalist>
               </div>
               <div className="form-group" style={{gridColumn:'span 5'}}>
                 <label>Storage Location</label>
                 <input placeholder="e.g. OR Supply Room B, Orthopedic Tray 3" value={form.location} onChange={e=>set('location',e.target.value)} required/>
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" disabled={busy||!form.lotId||!form.hospitalId||!form.quantity||!form.location}>
+            <button type="submit" className="btn btn-primary" disabled={busy||!form.lotId||!form.practiceId||!form.quantity||!form.location}>
               {busy?<><span className="spinner" style={{width:14,height:14}}/> Creating…</>:'+ Create Consignment'}
             </button>
           </form>
@@ -424,20 +424,20 @@ export default function DistributorPage() {
         {consignments.length>0 && (
           <div className="card">
             <div className="card-header">
-              <span className="card-title">🏥 Inventory by Hospital</span>
+              <span className="card-title">🏥 Inventory by Practice</span>
               <button className="btn btn-ghost btn-sm" onClick={refresh}>↻ Refresh</button>
             </div>
             <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
-              <input placeholder="🔍 Search consignment, device, hospital, lot..." value={consignmentSearch} onChange={e=>setConsignmentSearch(e.target.value)} style={{flex:1,maxWidth:400}}/>
+              <input placeholder="🔍 Search consignment, device, practice, lot..." value={consignmentSearch} onChange={e=>setConsignmentSearch(e.target.value)} style={{flex:1,maxWidth:400}}/>
               {consignmentSearch && <><button className="btn btn-ghost btn-sm" onClick={()=>setConsignmentSearch('')}>✕ Clear</button><span style={{fontSize:12,color:'var(--text-muted)'}}>{filteredConsignments.length} of {consignments.length}</span></>}
             </div>
-            {Object.entries(byHospital).map(([hospital,items])=>{
+            {Object.entries(byPractice).map(([practice,items])=>{
               const activeItems=items.filter(c=>c.status==='active');
               const totalAvail=activeItems.reduce((s,c)=>s+getAvailable(c),0);
               return (
-                <div key={hospital} style={{marginBottom:24}}>
+                <div key={practice} style={{marginBottom:24}}>
                   <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
-                    <span style={{fontSize:15,fontWeight:700}}>🏥 {hospital}</span>
+                    <span style={{fontSize:15,fontWeight:700}}>🏥 {practice}</span>
                     <span className="badge badge-blue">{activeItems.length} active</span>
                     <span style={{fontSize:12,color:'var(--accent-green)',fontWeight:600}}>{totalAvail} units available</span>
                   </div>
@@ -452,7 +452,7 @@ export default function DistributorPage() {
                         const newCat=c.deviceCategory!==lastCat; lastCat=c.deviceCategory;
                         return (
                           <>
-                            {newCat&&<tr key={'cat-'+hospital+c.deviceCategory}><td colSpan={11} style={{padding:'6px 12px',background:cat.border,borderTop:'2px solid '+cat.border,fontSize:11,fontWeight:700,color:'var(--text-secondary)',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:'var(--font-mono)'}}>{cat.label}</td></tr>}
+                            {newCat&&<tr key={'cat-'+practice+c.deviceCategory}><td colSpan={11} style={{padding:'6px 12px',background:cat.border,borderTop:'2px solid '+cat.border,fontSize:11,fontWeight:700,color:'var(--text-secondary)',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:'var(--font-mono)'}}>{cat.label}</td></tr>}
                             <tr key={c.consignmentId} style={{opacity:c.status==='recalled'?0.65:1,background:cat.bg}}>
                               <td style={{fontFamily:'var(--font-mono)',fontSize:10}}>{c.consignmentId}</td>
                               <td><div style={{fontWeight:600,fontSize:12}}>{c.deviceName}</div><div style={{fontSize:10,color:'var(--text-muted)'}}>{(c.deviceCategory||'').replace(/_/g,' ')} · {c.deviceType}</div></td>
@@ -506,14 +506,14 @@ export default function DistributorPage() {
           {forecastError&&<div className="alert alert-error" style={{marginTop:8}}>⚠ {forecastError}</div>}
           {forecastResult&&(
             <div className="table-wrap"><table>
-              <thead><tr><th>Status</th><th>Consignment</th><th>Device</th><th>Hospital</th><th>Available</th><th>Daily Rate</th><th>Est. Depletion</th><th>Recommendation</th><th>Reorder Qty</th></tr></thead>
+              <thead><tr><th>Status</th><th>Consignment</th><th>Device</th><th>Practice</th><th>Available</th><th>Daily Rate</th><th>Est. Depletion</th><th>Recommendation</th><th>Reorder Qty</th></tr></thead>
               <tbody>{forecastResult.map(f=>{
                 const us={critical:{bg:'rgba(239,68,68,0.05)',badge:'badge-red',icon:'🔴'},warning:{bg:'rgba(245,158,11,0.05)',badge:'badge-amber',icon:'🟡'},ok:{bg:'rgba(16,185,129,0.04)',badge:'badge-green',icon:'🟢'},no_usage:{bg:'rgba(100,116,139,0.04)',badge:'badge-blue',icon:'⚪'}}[f.urgency]||{bg:'transparent',badge:'badge-blue',icon:'—'};
                 return (<tr key={f.consignmentId} style={{background:us.bg}}>
                   <td><span className={'badge '+us.badge}>{us.icon} {f.urgency?.replace('_',' ')}</span></td>
                   <td style={{fontFamily:'var(--font-mono)',fontSize:10}}>{f.consignmentId}</td>
                   <td><div style={{fontWeight:600,fontSize:12}}>{f.device}</div><div style={{fontSize:10,color:'var(--text-muted)'}}>{(f.deviceCategory||'').replace(/_/g,' ')}</div></td>
-                  <td style={{fontSize:11}}>🏥 {f.hospital}</td>
+                  <td style={{fontSize:11}}>🏥 {f.practice}</td>
                   <td><span style={{fontWeight:600,color:f.urgency==='critical'?'var(--accent-red)':f.urgency==='warning'?'var(--accent-amber)':'var(--accent-green)'}}>{f.availableQty}</span> <span style={{fontSize:10,color:'var(--text-muted)'}}>/ {f.totalQty} ({f.stockPct}%)</span></td>
                   <td style={{fontSize:11}}>{f.dailyUsageRate>0?f.dailyUsageRate+' units/day':'No usage'}</td>
                   <td style={{fontSize:11}}>{f.projectedDepletionDate?<><strong style={{color:f.urgency==='critical'?'var(--accent-red)':f.urgency==='warning'?'var(--accent-amber)':'inherit'}}>{f.projectedDepletionDate}</strong> <span style={{color:'var(--text-muted)'}}>({f.daysUntilDepletion}d)</span></>:'—'}</td>
@@ -543,9 +543,9 @@ export default function DistributorPage() {
               <form onSubmit={submitVisit}>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:12,marginBottom:12}}>
                   <div className="form-group" style={{marginBottom:0,gridColumn:'span 2'}}>
-                    <label>Hospital</label>
-                    <input list="visit-hosp-list" placeholder="Select hospital..." value={visitForm.hospitalId} onChange={e=>setVF('hospitalId',e.target.value)} required/>
-                    <datalist id="visit-hosp-list">{allowedHospitals.map(h=><option key={h.id} value={h.name}/>)}</datalist>
+                    <label>Practice</label>
+                    <input list="visit-hosp-list" placeholder="Select practice..." value={visitForm.practiceId} onChange={e=>setVF('practiceId',e.target.value)} required/>
+                    <datalist id="visit-hosp-list">{allowedPractices.map(h=><option key={h.id} value={h.name}/>)}</datalist>
                   </div>
                   <div className="form-group" style={{marginBottom:0}}>
                     <label>Visit Date</label>
@@ -563,7 +563,7 @@ export default function DistributorPage() {
                     </select>
                   </div>
                   <div className="form-group" style={{marginBottom:0,gridColumn:'span 2'}}>
-                    <label>Hospital Contact <span style={{fontSize:10,color:'var(--text-muted)'}}>optional</span></label>
+                    <label>Practice Contact <span style={{fontSize:10,color:'var(--text-muted)'}}>optional</span></label>
                     <input placeholder="e.g. OR Coordinator name" value={visitForm.contactName} onChange={e=>setVF('contactName',e.target.value)}/>
                   </div>
                   <div className="form-group" style={{marginBottom:0,gridColumn:'span 2'}}>
@@ -575,7 +575,7 @@ export default function DistributorPage() {
                     <input placeholder="Any additional notes..." value={visitForm.notes} onChange={e=>setVF('notes',e.target.value)}/>
                   </div>
                 </div>
-                <button type="submit" className="btn btn-primary" disabled={visitBusy||!visitForm.hospitalId||!visitForm.visitDate||!visitForm.purpose}>
+                <button type="submit" className="btn btn-primary" disabled={visitBusy||!visitForm.practiceId||!visitForm.visitDate||!visitForm.purpose}>
                   {visitBusy?<><span className="spinner" style={{width:14,height:14}}/> Scheduling…</>:'📋 Schedule Visit'}
                 </button>
               </form>
@@ -632,7 +632,7 @@ export default function DistributorPage() {
                                 {v.visit_time && <span style={{fontSize:12,color:'var(--text-secondary)'}}>🕐 {v.visit_time}</span>}
                               </div>
                               <div style={{display:'flex',gap:16,flexWrap:'wrap',fontSize:13}}>
-                                <span style={{fontWeight:700}}>🏥 {v.hospital_id}</span>
+                                <span style={{fontWeight:700}}>🏥 {v.practice_id}</span>
                                 <span style={{color:'var(--text-secondary)'}}>{PURPOSE_LABELS[v.purpose]||v.purpose}</span>
                                 {v.contact_name && <span style={{color:'var(--text-muted)'}}>Contact: {v.contact_name}</span>}
                                 {v.case_id && <span style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--accent-blue)'}}>Case: {v.case_id}</span>}

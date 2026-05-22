@@ -460,7 +460,7 @@ export default function ManufacturerPage() {
             <h3 style={{marginBottom:4}}>✅ QC Release — {qcModal}</h3>
             <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:16}}>
               Confirm all quality control checks have passed. This action moves the lot
-              to active status and makes it available for consignment to hospitals.
+              to active status and makes it available for consignment to practices.
             </p>
             <div className="form-group" style={{marginBottom:16}}>
               <label>QC Notes <span style={{fontSize:10,color:'var(--text-muted)'}}>optional</span></label>
@@ -759,7 +759,7 @@ export default function ManufacturerPage() {
           <span className="badge badge-cyan">Fast-track · Existing FDA-cleared device</span>
         </div>
         <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:16}}>
-          Already have an FDA-cleared device in use at hospitals? Submit it for fast-track onboarding
+          Already have an FDA-cleared device in use at practices? Submit it for fast-track onboarding
           to the blockchain. Government reviews and approves in hours, not weeks.
           Include the clearance number for automatic clearance registration on approval.
         </p>
@@ -1160,7 +1160,7 @@ export default function ManufacturerPage() {
           </div>
           <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
             Lots in quarantine must be released by an authorized QA person before they can be
-            consigned to hospitals.
+            consigned to practices.
           </p>
           <div className="table-wrap"><table>
             <thead><tr>
@@ -1203,7 +1203,7 @@ export default function ManufacturerPage() {
       <div className="card">
         <div className="card-header">
           <span className="card-title">⚠ Flag Backorder</span>
-          <span className="badge badge-amber">Alerts distributors and hospital supply chain</span>
+          <span className="badge badge-amber">Alerts distributors and practice supply chain</span>
         </div>
         {backorderMsg && (
           <div className={`alert alert-${backorderMsg.type}`} style={{marginBottom:12}}>

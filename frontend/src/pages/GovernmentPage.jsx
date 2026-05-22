@@ -51,11 +51,11 @@ export default function GovernmentPage() {
   const [busy,             setBusy]             = useState(false);
   const [reviewBusy,       setReviewBusy]       = useState({});
   const [onboardBusy,      setOnboardBusy]      = useState({});
-  const [hospitalFilter,   setHospitalFilter]   = useState('');
+  const [practiceFilter,   setPracticeFilter]   = useState('');
   const [deviceSearch,     setDeviceSearch]     = useState('');
   const [clearanceSearch,  setClearanceSearch]  = useState('');
   const [lotSearch,        setLotSearch]        = useState('');
-  const [surgeonFilter,    setSurgeonFilter]    = useState('');
+  const [dentistFilter,    setDentistFilter]    = useState('');
 
   // NL Query
   const [nlQuery,   setNlQuery]   = useState('');
@@ -132,14 +132,14 @@ export default function GovernmentPage() {
       try { data = await api.getAllImplants(); setImplants(data); } catch {}
       setAnalyticsLoading(false);
     }
-    const hospitals  = [...new Set(data.map(i => i.hospitalId))].join(', ');
+    const practices  = [...new Set(data.map(i => i.practiceId))].join(', ');
     const categories = [...new Set(data.map(i => i.deviceCategory))].join(', ');
-    const surgeons   = [...new Set(data.map(i => i.surgeonId).filter(Boolean))].slice(0,20).join(', ');
+    const dentists   = [...new Set(data.map(i => i.dentistId).filter(Boolean))].slice(0,20).join(', ');
     const prompt = `You are a medical device data analyst. Convert this natural language query into JSON filter criteria for surgical implant records.
-Available data: Hospitals: ${hospitals}. Categories: ${categories}. Surgeons: ${surgeons}. Total: ${data.length} records.
+Available data: Practices: ${practices}. Categories: ${categories}. Dentists: ${dentists}. Total: ${data.length} records.
 User query: "${nlQuery}"
 Return ONLY valid JSON:
-{"hospitalId":null,"deviceCategory":null,"status":null,"surgeonId":null,"dateFrom":null,"dateTo":null,"deviceName":null,"explanation":"one sentence"}`;
+{"practiceId":null,"deviceCategory":null,"status":null,"dentistId":null,"dateFrom":null,"dateTo":null,"deviceName":null,"explanation":"one sentence"}`;
     try {
       const resp = await fetch('/api/ai/complete', { method:'POST', credentials:'include',
         headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt, maxTokens:300 }) });
@@ -149,10 +149,10 @@ Return ONLY valid JSON:
       if (!jsonMatch) throw new Error('Could not parse AI response');
       const filters = JSON.parse(jsonMatch[0]);
       const filtered = data.filter(i => {
-        if (filters.hospitalId     && !i.hospitalId?.toLowerCase().includes(filters.hospitalId.toLowerCase())) return false;
+        if (filters.practiceId     && !i.practiceId?.toLowerCase().includes(filters.practiceId.toLowerCase())) return false;
         if (filters.deviceCategory && i.deviceCategory !== filters.deviceCategory) return false;
         if (filters.status         && i.status !== filters.status) return false;
-        if (filters.surgeonId      && i.surgeonId !== filters.surgeonId) return false;
+        if (filters.dentistId      && i.dentistId !== filters.dentistId) return false;
         if (filters.dateFrom       && i.procedureDate < filters.dateFrom) return false;
         if (filters.dateTo         && i.procedureDate > filters.dateTo) return false;
         if (filters.deviceName     && !i.deviceName?.toLowerCase().includes(filters.deviceName.toLowerCase())) return false;
@@ -642,7 +642,7 @@ Return ONLY valid JSON:
             <div style={{display:'flex',gap:8}}>
               <input value={nlQuery} onChange={e=>setNlQuery(e.target.value)}
                 onKeyDown={e=>e.key==='Enter'&&runNLQuery()}
-                placeholder="e.g. show me all cardiac implants at Memorial Hospital this year"
+                placeholder="e.g. show me all cardiac implants at Memorial Practice this year"
                 style={{flex:1,background:'var(--bg-secondary)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'8px 12px',fontSize:13,color:'var(--text-primary)'}}/>
               <button className="btn btn-ghost btn-sm"
                 style={{color:'var(--accent-purple)',borderColor:'var(--accent-purple)',whiteSpace:'nowrap'}}
@@ -661,13 +661,13 @@ Return ONLY valid JSON:
           </div>
 
           <div style={{display:'flex',gap:12,marginBottom:16,flexWrap:'wrap'}}>
-            <select value={hospitalFilter} onChange={e=>setHospitalFilter(e.target.value)} style={{minWidth:220}}>
-              <option value="">All Hospitals</option>
-              {[...new Set(implants.map(i=>i.hospitalId))].sort().map(h=><option key={h} value={h}>{h}</option>)}
+            <select value={practiceFilter} onChange={e=>setPracticeFilter(e.target.value)} style={{minWidth:220}}>
+              <option value="">All Practices</option>
+              {[...new Set(implants.map(i=>i.practiceId))].sort().map(h=><option key={h} value={h}>{h}</option>)}
             </select>
-            <select value={surgeonFilter} onChange={e=>setSurgeonFilter(e.target.value)} style={{minWidth:180}}>
-              <option value="">All Surgeons</option>
-              {[...new Set(implants.map(i=>i.surgeonId).filter(Boolean))].sort().map(s=><option key={s} value={s}>{s}</option>)}
+            <select value={dentistFilter} onChange={e=>setDentistFilter(e.target.value)} style={{minWidth:180}}>
+              <option value="">All Dentists</option>
+              {[...new Set(implants.map(i=>i.dentistId).filter(Boolean))].sort().map(s=><option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
@@ -677,27 +677,27 @@ Return ONLY valid JSON:
               ? <div className="empty-state"><div className="icon">📊</div><p>No implant records — click Refresh</p></div>
               : (() => {
                   const filtered = (nlResult ? nlResult.records : implants)
-                    .filter(i=>(!hospitalFilter||i.hospitalId===hospitalFilter)&&(!surgeonFilter||i.surgeonId===surgeonFilter))
-                    .sort((a,b)=>(a.hospitalId||'').localeCompare(b.hospitalId||'')||(a.deviceCategory||'').localeCompare(b.deviceCategory||''));
+                    .filter(i=>(!practiceFilter||i.practiceId===practiceFilter)&&(!dentistFilter||i.dentistId===dentistFilter))
+                    .sort((a,b)=>(a.practiceId||'').localeCompare(b.practiceId||'')||(a.deviceCategory||'').localeCompare(b.deviceCategory||''));
                   let lastHosp=null, lastCat=null;
                   return (
                     <div className="table-wrap"><table>
-                      <thead><tr><th>Implant ID</th><th>Device</th><th>Category</th><th>Procedure</th><th>Body Location</th><th>Surgeon</th><th>Hospital</th><th>Date</th><th>Status</th></tr></thead>
+                      <thead><tr><th>Implant ID</th><th>Device</th><th>Category</th><th>Procedure</th><th>Body Location</th><th>Dentist</th><th>Practice</th><th>Date</th><th>Status</th></tr></thead>
                       <tbody>{filtered.map(i=>{
                         const cat=CC[i.deviceCategory]||{bg:'transparent',border:'transparent',badge:'badge-blue',label:i.deviceCategory};
-                        const newHosp=i.hospitalId!==lastHosp, newCat=newHosp||i.deviceCategory!==lastCat;
-                        lastHosp=i.hospitalId; lastCat=i.deviceCategory;
+                        const newHosp=i.practiceId!==lastHosp, newCat=newHosp||i.deviceCategory!==lastCat;
+                        lastHosp=i.practiceId; lastCat=i.deviceCategory;
                         return (<>
-                          {newHosp && <tr key={'h'+i.hospitalId+i.implantId}><td colSpan={9} style={{padding:'10px 14px',background:'var(--bg-secondary)',borderTop:'2px solid var(--border)',fontSize:13,fontWeight:700}}>🏥 {i.hospitalId}</td></tr>}
-                          {newCat  && <tr key={'c'+i.hospitalId+i.deviceCategory+i.implantId}><td colSpan={9} style={{padding:'6px 14px 6px 24px',background:cat.border,fontSize:11,fontWeight:700,color:'var(--text-secondary)',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:'var(--font-mono)'}}>{cat.label}</td></tr>}
+                          {newHosp && <tr key={'h'+i.practiceId+i.implantId}><td colSpan={9} style={{padding:'10px 14px',background:'var(--bg-secondary)',borderTop:'2px solid var(--border)',fontSize:13,fontWeight:700}}>🏥 {i.practiceId}</td></tr>}
+                          {newCat  && <tr key={'c'+i.practiceId+i.deviceCategory+i.implantId}><td colSpan={9} style={{padding:'6px 14px 6px 24px',background:cat.border,fontSize:11,fontWeight:700,color:'var(--text-secondary)',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:'var(--font-mono)'}}>{cat.label}</td></tr>}
                           <tr key={i.implantId} style={{background:cat.bg}}>
                             <td style={{fontFamily:'var(--font-mono)',fontSize:10}}>{i.implantId}</td>
                             <td><div style={{fontWeight:600,fontSize:12}}>{i.deviceName}</div><div style={{fontSize:10,color:'var(--text-muted)'}}>{i.lotNumber}</div></td>
                             <td><span className={`badge ${cat.badge}`}>{(i.deviceCategory||'').replace(/_/g,' ')}</span></td>
                             <td style={{fontSize:11}}>{i.procedureType}</td>
                             <td style={{fontSize:11}}>{i.bodyLocation}</td>
-                            <td style={{fontSize:12,fontWeight:500}}>{i.surgeonId||'—'}</td>
-                            <td style={{fontSize:11}}>🏥 {i.hospitalId}</td>
+                            <td style={{fontSize:12,fontWeight:500}}>{i.dentistId||'—'}</td>
+                            <td style={{fontSize:11}}>🏥 {i.practiceId}</td>
                             <td style={{fontSize:11}}>{i.procedureDate}</td>
                             <td><span className={`badge ${i.status==='implanted'?'badge-green':i.status==='explanted'?'badge-amber':'badge-red'}`}>{i.status}</span></td>
                           </tr>
@@ -756,7 +756,7 @@ Return ONLY valid JSON:
               : <div className="table-wrap"><table>
                   <thead><tr>
                     <th>Urgency</th><th>Event ID</th><th>Device</th><th>Event Type</th>
-                    <th>Event Date</th><th>Deadline</th><th>Days Remaining</th><th>Hospital</th><th>Reported</th>
+                    <th>Event Date</th><th>Deadline</th><th>Days Remaining</th><th>Practice</th><th>Reported</th>
                   </tr></thead>
                   <tbody>{(mdrData.deadlines||[]).map(e=>{
                     const badges={overdue:'badge-red',critical:'badge-red',warning:'badge-amber',safe:'badge-green',reported:'badge-blue'};
@@ -772,7 +772,7 @@ Return ONLY valid JSON:
                         <td style={{fontSize:12,fontWeight:700,color:e.daysRemaining<0?'var(--accent-red)':e.daysRemaining<7?'var(--accent-amber)':'var(--accent-green)'}}>
                           {e.reportedToFDA?'✓ Filed':e.daysRemaining<0?`${Math.abs(e.daysRemaining)}d overdue`:e.daysRemaining===0?'Due today!':`${e.daysRemaining}d left`}
                         </td>
-                        <td style={{fontSize:11}}>🏥 {e.hospitalId}</td>
+                        <td style={{fontSize:11}}>🏥 {e.practiceId}</td>
                         <td><span className={`badge ${e.reportedToFDA?'badge-green':'badge-red'}`}>{e.reportedToFDA?'✓ Yes':'✕ No'}</span></td>
                       </tr>
                     );

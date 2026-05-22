@@ -335,10 +335,10 @@ export default function VerifyPage() {
                         <div style={{fontSize:13,color:'var(--text-primary)'}}>
                           {e.eventType==='commission'      && <><strong>{e.from}</strong> → <strong>{e.to}</strong> · {e.quantity} units</>}
                           {e.eventType==='quality_release' && <>QC released by <strong>{e.performedBy}</strong></>}
-                          {e.eventType==='consign'         && <><strong>{e.repId}</strong> → 🏥 <strong>{e.hospitalId}</strong> · {e.quantity} units</>}
+                          {e.eventType==='consign'         && <><strong>{e.repId}</strong> → 🏥 <strong>{e.practiceId}</strong> · {e.quantity} units</>}
                           {e.eventType==='ship'            && <><strong>{e.from}</strong> → <strong>{e.to}</strong> · {e.quantity} units</>}
                           {e.eventType==='receive'         && <>Received by <strong>{e.receivedBy}</strong> · {e.quantity} units</>}
-                          {e.eventType==='implant'         && <>{e.procedureType} · {e.bodyLocation} · 🏥 {e.hospitalId}</>}
+                          {e.eventType==='implant'         && <>{e.procedureType} · {e.bodyLocation} · 🏥 {e.practiceId}</>}
                           {e.eventType==='explant'         && <>Explanted · {e.reason} · {e.explantDisposition}</>}
                           {e.eventType==='recall'          && <>Recalled Class <strong>{e.recallClass}</strong>: {e.reason}</>}
                           {e.eventType==='quarantine'      && <>Quarantined: {e.reason}</>}

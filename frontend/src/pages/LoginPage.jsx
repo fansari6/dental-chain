@@ -2,58 +2,70 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/dapp-architects-website-logo.png';
-import bgImage from '../assets/implantchain.png';
+import dentalBg from '../assets/dentalchain.jpg';
 import show from '../assets/show.png';
 import hide from '../assets/hide.png';
 
 const CREDENTIAL_GROUPS = [
   {
+    label: '⚙ Platform',
+    color: '#94a3b8',
+    users: [
+      ['admin@dentalchain.com',            'Admin@1234',      'Administrator'],
+    ],
+  },
+  {
     label: '🏛 Regulatory',
     color: '#3b82f6',
     users: [
-      ['regulatory@fda.gov',             'Gov1-1234',        'FDA / Regulatory'],
-      ['ip@healthsystem.org',            'IP1-1234',         'Infection Prevention'],
+      ['j.whitfield@fda.hhs.gov',          'FDA@1234',        'FDA / Regulatory'],
+      ['l.brooks@smiledentalgroup.com',     'Linda@1234',      'Infection Control'],
+      ['r.nguyen@advancedimplantcenter.com','Robert@1234',     'Infection Control'],
     ],
   },
   {
     label: '🏭 Manufacturers',
     color: '#10b981',
     users: [
-      ['user@abbott.com',       'Abbott@1234',    'Abbott'],
-      ['user@allergan.com',     'Allergan@1234',  'Allergan'],
-      ['user@ethicon.com',      'Ethicon@1234',   'Ethicon'],
-      ['user@medtronic.com',    'Medtronic@1234', 'Medtronic'],
-      ['user@smith-nephew.com', 'Smith@1234',     'Smith & Nephew'],
-      ['user@stryker.com',      'Stryker@1234',   'Stryker'],
+      ['compliance@nobelbiocare.com',       'Nobel@1234',      'Nobel Biocare'],
+      ['compliance@straumann.com',          'Straumann@1234',  'Straumann'],
+      ['compliance@zimmerbiomet.com',       'Zimmer@1234',     'Zimmer Biomet'],
+      ['compliance@biohorizons.com',        'BioH@1234',       'BioHorizons'],
     ],
   },
   {
-    label: '🏥 Memorial Hospital',
+    label: '🚚 Distributors',
+    color: '#06b6d4',
+    users: [
+      ['m.webb@henryschein.com',            'Schein@1234',     'Henry Schein Rep'],
+      ['s.kowalski@patterson.com',          'Patterson@1234',  'Patterson Rep'],
+    ],
+  },
+  {
+    label: '🦷 Smile Dental Group',
     color: '#f59e0b',
     users: [
-      ['rep@memorialhospital.org',        'Rep-Mem@1234',   'Distributor / Rep'],
-      ['supplychain@memorialhospital.org', 'SC-Mem@1234',   'Supply Chain'],
-      ['nurse@memorialhospital.org',       'Nurse-Mem@1234','OR Nurse'],
+      ['s.johnson@smiledentalgroup.com',    'DrJ@1234',        'Dentist'],
+      ['m.garcia@smiledentalgroup.com',     'Maria@1234',      'Dental Assistant'],
     ],
   },
   {
-    label: '🏥 University Hospital',
+    label: '🦷 Advanced Implant Center',
     color: '#a78bfa',
     users: [
-      ['rep@universityhospital.org',        'Rep-Uni@1234',   'Distributor / Rep'],
-      ['supplychain@universityhospital.org', 'SC-Uni@1234',   'Supply Chain'],
-      ['nurse@universityhospital.org',       'Nurse-Uni@1234','OR Nurse'],
+      ['m.chen@advancedimplantcenter.com',  'DrC@1234',        'Dentist'],
+      ['j.park@advancedimplantcenter.com',  'James@1234',      'Dental Assistant'],
     ],
   },
 ];
 
 const STATS = [
-  { label: 'Devices Tracked',  value: '2,400+' },
-  { label: 'Hospitals',        value: '12'      },
-  { label: 'Implant Records',  value: '18,500+' },
+  { label: 'Devices Tracked',  value: '840+'   },
+  { label: 'Practices',        value: '28'      },
+  { label: 'Implant Records',  value: '5,200+' },
 ];
 
-const COMPLIANCE_TAGS = ['FDA UDI', 'EU MDR', 'ISO 13485', 'EPCIS 2.0', '21 CFR Part 803'];
+const COMPLIANCE_TAGS = ['FDA UDI', 'ISO 13485', 'HIPAA', '21 CFR Part 830', 'EU MDR'];
 
 export default function LoginPage() {
   const { login }   = useAuth();
@@ -146,7 +158,7 @@ export default function LoginPage() {
         }
         .ic-tag {
           font-size: 10px; padding: 3px 10px; border-radius: 99px;
-          background: rgba(255,128,0,0.08); color: rgba(255,128,0,0.7);
+          background: rgba(14,165,233,0.08); color: rgba(14,165,233,0.7);
           border: 1px solid rgba(255,128,0,0.18);
           font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.04em;
         }
@@ -213,7 +225,7 @@ export default function LoginPage() {
           display: flex; align-items: center; justify-content: center;
           gap: 8px; margin-top: 8px; letter-spacing: 0.02em; font-family: inherit;
         }
-        .ic-btn:hover:not(:disabled) { background: #ff9a2e; }
+        .ic-btn:hover:not(:disabled) { background: #e67300; }
         .ic-btn:active:not(:disabled) { transform: scale(0.99); }
         .ic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .ic-spin {
@@ -258,20 +270,21 @@ export default function LoginPage() {
 
         {/* LEFT */}
         <div className="ic-left" style={{
-          backgroundImage: `url(${bgImage})`,
+          backgroundImage: `url(${dentalBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
+          
+          
         }}>
           <div style={{position:'relative',zIndex:1}}>
-            <img src={logo} alt="DApp Architects" className="ic-dapp"/>
-            <div className="ic-logo"><span className="s">Implant</span><span className="o">Chain</span></div>
-            <div className="ic-tagline">Surgical Implant Traceability · Hyperledger Fabric 2.5</div>
+            <img src={logo} alt="DentalChain" className="ic-dapp"/>
+            <div className="ic-logo"><span className="s">Dental</span><span className="o">Chain</span></div>
+            <div className="ic-tagline">Dental Implant Traceability · Hyperledger Fabric 2.5</div>
           </div>
 
           <div>
             <h1 className="ic-headline">
-              Full chain-of-custody<br/>
+              End-to-end traceability for dental implants,<br/>
               for every <em>implant</em>,<br/>
               from factory to patient.
             </h1>
@@ -299,8 +312,8 @@ export default function LoginPage() {
           <div className="ic-fw">
 
             <div className="ic-mob">
-              <img src={logo} alt="DApp Architects" className="ic-dapp"/>
-              <div className="ic-logo"><span className="s">Implant</span><span className="o">Chain</span></div>
+              <img src={logo} alt="DentalChain" className="ic-dapp"/>
+              <div className="ic-logo"><span className="s">Dental</span><span className="o">Chain</span></div>
             </div>
 
             <div className="ic-h1">Welcome back</div>
