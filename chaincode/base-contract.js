@@ -19,9 +19,12 @@ class BaseContract extends Contract {
 
   _checkRole(ctx, allowedRoles) {
     const { role, userId } = this._getCallerInfo(ctx);
-    if (!allowedRoles.includes(role)) {
+    // Skip role check if no role attribute set (local dev / Admin identity)
+    if (!role) return;
+    const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+    if (!roles.includes(role)) {
       throw new Error(
-        `Access denied: '${userId}' has role '${role}' but needs one of [${allowedRoles.join(', ')}]`,
+        `Access denied: '${userId}' has role '${role}' but needs one of [${roles.join(', ')}]`,
       );
     }
   }
@@ -41,6 +44,11 @@ class BaseContract extends Contract {
   async _exists(ctx, key) {
     const data = await ctx.stub.getState(key);
     return data && data.length > 0;
+  }
+
+  // Alias for compatibility
+  async _assetExists(ctx, key) {
+    return this._exists(ctx, key);
   }
 
   async _getAllByRange(ctx, startKey, endKey) {

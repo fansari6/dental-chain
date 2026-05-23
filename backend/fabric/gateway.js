@@ -10,6 +10,7 @@ const MSP_ID         = process.env.FABRIC_MSP_ID     || 'Org1MSP';
 const PEER_HOST      = process.env.FABRIC_PEER_HOST  || 'localhost';
 const PEER_PORT      = process.env.FABRIC_PEER_PORT  || '7051';
 const PEER_ENDPOINT  = `${PEER_HOST}:${PEER_PORT}`;
+const IDENTITY_OVERRIDE = process.env.FABRIC_IDENTITY_OVERRIDE || null;
 const TEST_NETWORK_DIR = process.env.TEST_NETWORK_DIR || '/tmp/fabric-placeholder';
 
 const PEER_TLS_CERT_PATH = path.join(
@@ -41,6 +42,8 @@ async function newGrpcClient() {
 }
 
 async function loadIdentity(identityLabel) {
+  // In local dev, override with Admin identity if set
+  if (IDENTITY_OVERRIDE) identityLabel = IDENTITY_OVERRIDE;
   const msp      = mspPath(identityLabel);
   const certFile = await getFirstFile(path.join(msp, 'signcerts'));
   const keyFile  = await getFirstFile(path.join(msp, 'keystore'));

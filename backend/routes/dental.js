@@ -23,7 +23,7 @@ const identity = req => req.session.user.identityLabel;
 router.get('/assets/stats', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getStats');
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -33,7 +33,7 @@ router.get('/assets/stats', requireAuth, async (req, res) => {
 router.get('/assets/devices', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getAllDevices');
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -56,7 +56,7 @@ router.post('/device', requireAuth, requireRole('government'), async (req, res) 
       action: 'REGISTER_DEVICE', target: udiDI,
       details: { deviceName, deviceType, material }
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -65,7 +65,7 @@ router.post('/device', requireAuth, requireRole('government'), async (req, res) 
 router.get('/device/:udiDI', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getDevice', req.params.udiDI);
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(404).json({ error: err.message });
   }
@@ -75,7 +75,7 @@ router.get('/device/:udiDI', requireAuth, async (req, res) => {
 router.get('/assets/clearances', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getAllClearances');
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -97,7 +97,7 @@ router.post('/clearance', requireAuth, requireRole('government'), async (req, re
       actor: req.session.user.username,
       action: 'ISSUE_CLEARANCE', target: clearanceNumber
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -107,7 +107,7 @@ router.post('/clearance', requireAuth, requireRole('government'), async (req, re
 router.get('/assets/iso13485', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getAllISO13485');
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -129,7 +129,7 @@ router.post('/iso13485', requireAuth, requireRole('manufacturer', 'admin'), asyn
       actor: req.session.user.username,
       action: 'UPLOAD_ISO13485', target: certId
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -139,7 +139,7 @@ router.post('/iso13485', requireAuth, requireRole('manufacturer', 'admin'), asyn
 router.get('/assets/lots', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getAllLots');
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -163,7 +163,7 @@ router.post('/lot', requireAuth, requireRole('manufacturer'), async (req, res) =
       action: 'CREATE_LOT', target: lotId,
       details: { udiDI, quantity }
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -180,7 +180,7 @@ router.post('/lot/:lotId/release', requireAuth, requireRole('manufacturer'), asy
       actor: req.session.user.username,
       action: 'RELEASE_LOT', target: req.params.lotId
     });
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -212,7 +212,7 @@ router.post('/lot/:lotId/recall', requireAuth, requireRole('government', 'manufa
       action: 'RECALL_LOT', target: req.params.lotId,
       details: { recallClass, reason }
     });
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -236,7 +236,7 @@ router.get('/assets/consignments', requireAuth, async (req, res) => {
     } else {
       result = await evaluateTransaction(identity(req), 'getAllConsignments');
     }
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -262,7 +262,7 @@ router.post('/consignment', requireAuth, requireRole('distributor'), async (req,
       action: 'CREATE_CONSIGNMENT', target: consignmentId,
       details: { lotId, practiceId: practice.name, quantity }
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -280,7 +280,7 @@ router.post('/consignment/:consignmentId/return', requireAuth, async (req, res) 
       actor: req.session.user.username,
       action: 'RETURN_CONSIGNMENT', target: req.params.consignmentId
     });
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -308,7 +308,7 @@ router.post('/implant/post', requireAuth, requireRole('dentist', 'dental_assista
       action: 'RECORD_IMPLANT_POST', target: implantId,
       details: { toothNumber, toothSystem, dentistId }
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -327,7 +327,7 @@ router.post('/implant/:implantId/abutment', requireAuth, requireRole('dentist', 
       actor: req.session.user.username,
       action: 'RECORD_ABUTMENT', target: req.params.implantId
     });
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -347,7 +347,7 @@ router.post('/implant/:implantId/crown', requireAuth, requireRole('dentist', 'de
       action: 'RECORD_CROWN', target: req.params.implantId,
       details: { material, shade }
     });
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -356,7 +356,7 @@ router.post('/implant/:implantId/crown', requireAuth, requireRole('dentist', 'de
 router.get('/assets/implants', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getAllImplants');
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -365,7 +365,7 @@ router.get('/assets/implants', requireAuth, async (req, res) => {
 router.get('/history/implant/:implantId', requireAuth, async (req, res) => {
   try {
     const result = await evaluateTransaction(identity(req), 'getImplantHistory', req.params.implantId);
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(404).json({ error: err.message });
   }
@@ -546,7 +546,7 @@ router.get('/recall/patients-by-lot/:lotNumber', requireAuth, async (req, res) =
     const result = await evaluateTransaction(
       identity(req), 'getPatientsByLot', req.params.lotNumber
     );
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -570,7 +570,7 @@ router.post('/recall/notification', requireAuth, async (req, res) => {
       action: 'RECALL_NOTIFICATION', target: notificationId,
       details: { lotNumber, implantId, notificationMethod }
     });
-    res.status(201).json(JSON.parse(result));
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -685,7 +685,7 @@ router.get('/verify/device/:udiDI', async (req, res) => {
     const result = await evaluateTransaction(
       'public', 'verifyDevice', req.params.udiDI
     );
-    res.json(JSON.parse(result));
+    res.json(result);
   } catch (err) {
     res.status(404).json({ error: err.message });
   }

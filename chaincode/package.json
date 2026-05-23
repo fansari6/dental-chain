@@ -2,7 +2,7 @@
   "name": "dentalchain-chaincode",
   "version": "1.0.0",
   "description": "DentalChain \u2014 Dental Implant Chaincode",
-  "main": "implant-contract.js",
+  "main": "dental-contract.js",
   "scripts": {
     "start": "fabric-chaincode-node start"
   },

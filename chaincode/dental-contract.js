@@ -149,6 +149,191 @@ async recordCrown(ctx, implantId, crownUdiDI, crownLot,
   async getDeviceHistory(ctx, udiDI) {
     return this._getHistory(ctx, `DEVICE_${udiDI}`);
   }
+
+  // ── Version ───────────────────────────────────────────────────
+  async getVersion(ctx) {
+    return this.VERSION || '1.0';
+  }
+
+  // ── Shared queries (same as ImplantContract) ──────────────────
+  async getAllDevices(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'DEVICE_', 'DEVICE_~'));
+  }
+
+  async getDevice(ctx, udiDI) {
+    return JSON.stringify(await this._getAsset(ctx, `DEVICE_${udiDI}`));
+  }
+
+  async getAllClearances(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'CLEARANCE_', 'CLEARANCE_~'));
+  }
+
+  async getAllISO13485(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'ISO_', 'ISO_~'));
+  }
+
+  async getAllLots(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'LOT_', 'LOT_~'));
+  }
+
+  async getAllConsignments(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'CONSIGNMENT_', 'CONSIGNMENT_~'));
+  }
+
+  async getConsignmentsByHospital(ctx, practiceId) {
+    const all = await this._getAllByRange(ctx, 'CONSIGNMENT_', 'CONSIGNMENT_~');
+    return JSON.stringify(all.filter(c => c.hospitalId === practiceId));
+  }
+
+  async getConsignmentsByRep(ctx, repId) {
+    const all = await this._getAllByRange(ctx, 'CONSIGNMENT_', 'CONSIGNMENT_~');
+    return JSON.stringify(all.filter(c => c.repId === repId));
+  }
+
+  async getAllImplants(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'IMPLANT_', 'IMPLANT_~'));
+  }
+
+  async getPatientsByLot(ctx, lotNumber) {
+    const lots = await this._getAllByRange(ctx, 'LOT_', 'LOT_~');
+    const matchingLotIds = new Set(
+      lots.filter(l => l.lotNumber === lotNumber || l.lotId === lotNumber).map(l => l.lotId)
+    );
+    const consignments = await this._getAllByRange(ctx, 'CONSIGNMENT_', 'CONSIGNMENT_~');
+    const matchingConsIds = new Set(
+      consignments.filter(c => matchingLotIds.has(c.lotId)).map(c => c.consignmentId)
+    );
+    const all = await this._getAllByRange(ctx, 'IMPLANT_', 'IMPLANT_~');
+    return JSON.stringify(all.filter(i =>
+      (i.lotNumber === lotNumber || matchingConsIds.has(i.consignmentId)) &&
+      i.status !== 'explanted'
+    ));
+  }
+
+  async verifyDevice(ctx, udiDI) {
+    const data = await ctx.stub.getState(`DEVICE_${udiDI}`);
+    if (!data || data.length === 0) return JSON.stringify({ found: false, udiDI });
+    const device = JSON.parse(data.toString());
+    return JSON.stringify({ found: true, ...device });
+  }
+
+  async getStats(ctx) {
+    const devices      = await this._getAllByRange(ctx, 'DEVICE_',      'DEVICE_~');
+    const lots         = await this._getAllByRange(ctx, 'LOT_',         'LOT_~');
+    const consignments = await this._getAllByRange(ctx, 'CONSIGNMENT_', 'CONSIGNMENT_~');
+    const implants     = await this._getAllByRange(ctx, 'IMPLANT_',     'IMPLANT_~');
+    return JSON.stringify({
+      devices:            devices.length,
+      activeLots:         lots.filter(l => l.status === 'active').length,
+      quarantineLots:     lots.filter(l => l.status === 'quarantine').length,
+      recalledLots:       lots.filter(l => l.status === 'recalled').length,
+      activeConsignments: consignments.filter(c => c.status === 'active').length,
+      activeImplants:     implants.filter(i => i.status === 'implanted').length,
+      explants:           implants.filter(i => i.status === 'explanted').length,
+    });
+  }
+
+  async getInventory(ctx) {
+    return JSON.stringify(await this._getAllByRange(ctx, 'DEVICE_', 'DEVICE_~'));
+  }
+
+  // ── Shared lot/clearance/ISO functions ────────────────────────
+  async issueClearance(ctx, clearanceNumber, udiDI, manufacturerId,
+    clearanceType, indicationsForUse, clearanceDate, expiryDate, txTime) {
+    this._checkRole(ctx, ['government']);
+    const asset = {
+      clearanceNumber, udiDI, manufacturerId, clearanceType,
+      indicationsForUse, clearanceDate, expiryDate: expiryDate || null,
+      status: 'active', issuedBy: this._getCallerInfo(ctx).userId, issuedAt: txTime,
+    };
+    await ctx.stub.putState(`CLEARANCE_${clearanceNumber}`, Buffer.from(JSON.stringify(asset)));
+    return JSON.stringify(asset);
+  }
+
+  async uploadISO13485(ctx, certId, manufacturerId, facilityName, facilityAddress,
+    scope, certBody, issueDate, expiryDate, txTime) {
+    this._checkRole(ctx, ['manufacturer', 'admin']);
+    const asset = {
+      certId, manufacturerId, facilityName, facilityAddress,
+      scope, certBody, issueDate, expiryDate,
+      status: 'active', uploadedBy: this._getCallerInfo(ctx).userId, uploadedAt: txTime,
+    };
+    await ctx.stub.putState(`ISO_${certId}`, Buffer.from(JSON.stringify(asset)));
+    return JSON.stringify(asset);
+  }
+
+  async createLot(ctx, lotId, udiDI, clearanceNumber, certId, lotNumber,
+    manufacturingDate, expiryDate, sterileExpiryDate, quantity, storageConditions, txTime) {
+    this._checkRole(ctx, ['manufacturer']);
+    const qty = parseInt(quantity);
+    const asset = {
+      lotId, udiDI, clearanceNumber, certId, lotNumber,
+      manufacturingDate, expiryDate, sterileExpiryDate: sterileExpiryDate || expiryDate,
+      quantity: qty, remainingQuantity: qty,
+      storageConditions: storageConditions || 'Store at room temperature',
+      status: 'quarantine', manufacturerId: this._getCallerInfo(ctx).userId,
+      createdAt: txTime,
+    };
+    await ctx.stub.putState(`LOT_${lotId}`, Buffer.from(JSON.stringify(asset)));
+    return JSON.stringify(asset);
+  }
+
+  async releaseLot(ctx, lotId, qcNotes, txTime) {
+    this._checkRole(ctx, ['manufacturer']);
+    const lot = await this._getAsset(ctx, `LOT_${lotId}`);
+    lot.status = 'active'; lot.qualityReleaseDate = txTime; lot.qcNotes = qcNotes || null;
+    await ctx.stub.putState(`LOT_${lotId}`, Buffer.from(JSON.stringify(lot)));
+    return JSON.stringify(lot);
+  }
+
+  async recallLot(ctx, lotId, recallClass, reason, affectedLotNumbers, txTime) {
+    this._checkRole(ctx, ['government', 'manufacturer']);
+    const lot = await this._getAsset(ctx, `LOT_${lotId}`);
+    lot.status = 'recalled'; lot.recallClass = recallClass;
+    lot.recallReason = reason; lot.recalledBy = this._getCallerInfo(ctx).userId;
+    lot.recalledAt = txTime;
+    await ctx.stub.putState(`LOT_${lotId}`, Buffer.from(JSON.stringify(lot)));
+    ctx.stub.setEvent('LotRecalled', Buffer.from(JSON.stringify({ lotId, recallClass, reason })));
+    return JSON.stringify(lot);
+  }
+
+  async createConsignment(ctx, consignmentId, lotId, hospitalId, quantity, location, txTime) {
+    this._checkRole(ctx, ['distributor']);
+    const lot = await this._getAsset(ctx, `LOT_${lotId}`);
+    const qty = parseInt(quantity);
+    lot.remainingQuantity -= qty;
+    await ctx.stub.putState(`LOT_${lotId}`, Buffer.from(JSON.stringify(lot)));
+    const asset = {
+      consignmentId, lotId, udiDI: lot.udiDI,
+      deviceName: lot.deviceName || '', lotNumber: lot.lotNumber,
+      repId: this._getCallerInfo(ctx).userId, hospitalId,
+      quantity: qty, usedQuantity: 0, openedNotUsed: 0, returnedQuantity: 0,
+      location, expiryDate: lot.expiryDate,
+      sterileExpiryDate: lot.sterileExpiryDate || lot.expiryDate,
+      status: 'active', createdAt: txTime,
+    };
+    await ctx.stub.putState(`CONSIGNMENT_${consignmentId}`, Buffer.from(JSON.stringify(asset)));
+    return JSON.stringify(asset);
+  }
+
+  async returnConsignment(ctx, consignmentId, quantity, reason, txTime) {
+    const c = await this._getAsset(ctx, `CONSIGNMENT_${consignmentId}`);
+    c.returnedQuantity += parseInt(quantity);
+    await ctx.stub.putState(`CONSIGNMENT_${consignmentId}`, Buffer.from(JSON.stringify(c)));
+    return JSON.stringify(c);
+  }
+
+  async recordRecallNotification(ctx, notificationId, lotNumber, implantId,
+    patientIdHash, hospitalId, notificationMethod, notifiedBy, notes, txTime) {
+    const asset = {
+      notificationId, lotNumber, implantId, patientIdHash,
+      hospitalId, notificationMethod, notifiedBy, notes,
+      notifiedAt: txTime, status: 'notified',
+    };
+    await ctx.stub.putState(`RECALL_NOTIF_${notificationId}`, Buffer.from(JSON.stringify(asset)));
+    return JSON.stringify(asset);
+  }
+
 }
 
 module.exports = { contracts: [DentalContract] };
