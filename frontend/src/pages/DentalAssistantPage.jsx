@@ -908,16 +908,16 @@ export default function NursePage() {
               ? <div className="empty-state"><div className="icon">📦</div><p>No active consignment inventory</p></div>
               : <div className="table-wrap"><table>
                   <thead><tr><th>Consignment ID</th><th>Device</th><th>Category</th><th>Practice</th><th>Location</th><th>Lot #</th><th>Total</th><th>Used</th><th>Available</th><th>Sterile Expiry</th></tr></thead>
-                  <tbody>{[...consignments].sort((a,b)=>a.deviceCategory.localeCompare(b.deviceCategory)||a.deviceName.localeCompare(b.deviceName)).map(c=>{
+                  <tbody>{[...consignments].sort((a,b)=>(a.deviceCategory||'').localeCompare(b.deviceCategory||'')||(a.deviceName||'').localeCompare(b.deviceName||'')).map(c=>{
                     const avail=getAvailable(c);
                     const CC={'cardiac':{bg:'rgba(59,130,246,0.06)',border:'rgba(59,130,246,0.15)',badge:'badge-blue',label:'🫀 Cardiac'},'general_surgery':{bg:'rgba(16,185,129,0.06)',border:'rgba(16,185,129,0.15)',badge:'badge-green',label:'🟢 General Surgery'},'neurosurgery':{bg:'rgba(139,92,246,0.06)',border:'rgba(139,92,246,0.15)',badge:'badge-purple',label:'🧠 Neurosurgery'},'orthopedic':{bg:'rgba(245,158,11,0.06)',border:'rgba(245,158,11,0.15)',badge:'badge-amber',label:'🦴 Orthopedic'}};
-                    const cat=CC[c.deviceCategory]||{bg:'transparent',badge:'badge-blue'};
+                    const cat=CC[c.deviceCategory||'']||{bg:'transparent',badge:'badge-blue',label:c.deviceCategory||'Device'};
                     return (
                       <tr key={c.consignmentId} style={{cursor:'pointer',background:cat.bg}}
                         onClick={()=>{ setTab('implant'); handleConsignmentSelect(c.consignmentId); }}>
                         <td style={{fontFamily:'var(--font-mono)',fontSize:10}}>{c.consignmentId}</td>
                         <td><div style={{fontWeight:600,fontSize:12}}>{c.deviceName}</div><div style={{fontSize:10,color:'var(--text-muted)'}}>{c.deviceType}</div></td>
-                        <td><span className={`badge ${cat.badge}`}>{c.deviceCategory.replace(/_/g,' ')}</span></td>
+                        <td><span className={`badge ${cat.badge}`}>{(c.deviceCategory||'device').replace(/_/g,' ')}</span></td>
                         <td style={{fontSize:11}}>🏥 {c.practiceId}</td>
                         <td style={{fontSize:11}}>{c.location}</td>
                         <td style={{fontFamily:'var(--font-mono)',fontSize:10}}>{c.lotNumber}</td>

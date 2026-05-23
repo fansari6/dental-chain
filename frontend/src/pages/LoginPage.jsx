@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/dapp-architects-website-logo.png';
-import dentalBg from '../assets/dentalchain.jpg';
+import dentalBg from '../assets/dentalchain.png';
 import show from '../assets/show.png';
 import hide from '../assets/hide.png';
 
@@ -10,70 +10,78 @@ const CREDENTIAL_GROUPS = [
   {
     label: '⚙ Platform',
     color: '#94a3b8',
-    users: [
-      ['admin@dentalchain.com',            'Admin@1234',      'Administrator'],
-    ],
+    users: [['admin@dentalchain.com', 'Admin@1234', 'Administrator']],
   },
   {
     label: '🏛 Regulatory',
     color: '#3b82f6',
     users: [
-      ['j.whitfield@fda.hhs.gov',          'FDA@1234',        'FDA / Regulatory'],
-      ['l.brooks@smiledentalgroup.com',     'Linda@1234',      'Infection Control'],
-      ['r.nguyen@advancedimplantcenter.com','Robert@1234',     'Infection Control'],
+      ['j.whitfield@fda.hhs.gov', 'FDA@1234', 'FDA / Regulatory'],
+      ['l.brooks@smiledentalgroup.com', 'Linda@1234', 'Infection Control'],
+      [
+        'r.nguyen@advancedimplantcenter.com',
+        'Robert@1234',
+        'Infection Control',
+      ],
     ],
   },
   {
     label: '🏭 Manufacturers',
     color: '#10b981',
     users: [
-      ['compliance@nobelbiocare.com',       'Nobel@1234',      'Nobel Biocare'],
-      ['compliance@straumann.com',          'Straumann@1234',  'Straumann'],
-      ['compliance@zimmerbiomet.com',       'Zimmer@1234',     'Zimmer Biomet'],
-      ['compliance@biohorizons.com',        'BioH@1234',       'BioHorizons'],
+      ['compliance@nobelbiocare.com', 'Nobel@1234', 'Nobel Biocare'],
+      ['compliance@straumann.com', 'Straumann@1234', 'Straumann'],
+      ['compliance@zimmerbiomet.com', 'Zimmer@1234', 'Zimmer Biomet'],
+      ['compliance@biohorizons.com', 'BioH@1234', 'BioHorizons'],
     ],
   },
   {
     label: '🚚 Distributors',
     color: '#06b6d4',
     users: [
-      ['m.webb@henryschein.com',            'Schein@1234',     'Henry Schein Rep'],
-      ['s.kowalski@patterson.com',          'Patterson@1234',  'Patterson Rep'],
+      ['m.webb@henryschein.com', 'Schein@1234', 'Henry Schein Rep'],
+      ['s.kowalski@patterson.com', 'Patterson@1234', 'Patterson Rep'],
     ],
   },
   {
     label: '🦷 Smile Dental Group',
     color: '#f59e0b',
     users: [
-      ['s.johnson@smiledentalgroup.com',    'DrJ@1234',        'Dentist'],
-      ['m.garcia@smiledentalgroup.com',     'Maria@1234',      'Dental Assistant'],
+      ['s.johnson@smiledentalgroup.com', 'DrJ@1234', 'Dentist'],
+      ['m.garcia@smiledentalgroup.com', 'Maria@1234', 'Dental Assistant'],
     ],
   },
   {
     label: '🦷 Advanced Implant Center',
     color: '#a78bfa',
     users: [
-      ['m.chen@advancedimplantcenter.com',  'DrC@1234',        'Dentist'],
-      ['j.park@advancedimplantcenter.com',  'James@1234',      'Dental Assistant'],
+      ['m.chen@advancedimplantcenter.com', 'DrC@1234', 'Dentist'],
+      ['j.park@advancedimplantcenter.com', 'James@1234', 'Dental Assistant'],
     ],
   },
 ];
 
 const STATS = [
-  { label: 'Devices Tracked',  value: '840+'   },
-  { label: 'Practices',        value: '28'      },
-  { label: 'Implant Records',  value: '5,200+' },
+  { label: 'Devices Tracked', value: '840+' },
+  { label: 'Practices', value: '28' },
+  { label: 'Implant Records', value: '5,200+' },
 ];
 
-const COMPLIANCE_TAGS = ['FDA UDI', 'ISO 13485', 'HIPAA', '21 CFR Part 830', 'EU MDR'];
+const COMPLIANCE_TAGS = [
+  'FDA UDI',
+  'ISO 13485',
+  'HIPAA',
+  '21 CFR Part 830',
+  'EU MDR',
+];
 
 export default function LoginPage() {
-  const { login }   = useAuth();
-  const navigate    = useNavigate();
-  const [form,      setForm]      = useState({ username: '', password: '' });
-  const [error,     setError]     = useState('');
-  const [loading,   setLoading]   = useState(false);
-  const [showPwd,   setShowPwd]   = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [showCreds, setShowCreds] = useState(false);
 
   const submit = async (e) => {
@@ -90,7 +98,10 @@ export default function LoginPage() {
     }
   };
 
-  const fillCreds = (u, p) => { setForm({ username: u, password: p }); setShowCreds(false); };
+  const fillCreds = (u, p) => {
+    setForm({ username: u, password: p });
+    setShowCreds(false);
+  };
 
   return (
     <>
@@ -267,38 +278,48 @@ export default function LoginPage() {
       `}</style>
 
       <div className="ic-root">
-
         {/* LEFT */}
-        <div className="ic-left" style={{
-          backgroundImage: `url(${dentalBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          
-          
-        }}>
-          <div style={{position:'relative',zIndex:1}}>
-            <img src={logo} alt="DentalChain" className="ic-dapp"/>
-            <div className="ic-logo"><span className="s">Dental</span><span className="o">Chain</span></div>
-            <div className="ic-tagline">Dental Implant Traceability · Hyperledger Fabric 2.5</div>
+        <div
+          className="ic-left"
+          style={{
+            backgroundImage: `url(${dentalBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <img src={logo} alt="DentalChain" className="ic-dapp" />
+            <div className="ic-logo">
+              <span className="s">Dental</span>
+              <span className="o">Chain</span>
+            </div>
+            <div className="ic-tagline">
+              Dental Implant Traceability · Hyperledger Fabric 2.5
+            </div>
           </div>
 
           <div>
             <h1 className="ic-headline">
-              End-to-end traceability for dental implants,<br/>
-              for every <em>implant</em>,<br/>
+              End-to-end traceability for dental implants,
+              <br />
+              for every <em>implant</em>,<br />
               from factory to patient.
             </h1>
             <p className="ic-sub">
-              End-to-end traceability across manufacturers, distributors,
-              and hospitals. Instant recall response. FDA-ready audit trail.
+              End-to-end traceability across manufacturers, distributors, and
+              hospitals. Instant recall response. FDA-ready audit trail.
             </p>
             <div className="ic-tags">
-              {COMPLIANCE_TAGS.map(t => <span key={t} className="ic-tag">{t}</span>)}
+              {COMPLIANCE_TAGS.map((t) => (
+                <span key={t} className="ic-tag">
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
 
           <div className="ic-stats">
-            {STATS.map(s => (
+            {STATS.map((s) => (
               <div key={s.label} className="ic-stat">
                 <div className="ic-stat-v">{s.value}</div>
                 <div className="ic-stat-l">{s.label}</div>
@@ -310,10 +331,12 @@ export default function LoginPage() {
         {/* RIGHT */}
         <div className="ic-right">
           <div className="ic-fw">
-
             <div className="ic-mob">
-              <img src={logo} alt="DentalChain" className="ic-dapp"/>
-              <div className="ic-logo"><span className="s">Dental</span><span className="o">Chain</span></div>
+              <img src={logo} alt="DentalChain" className="ic-dapp" />
+              <div className="ic-logo">
+                <span className="s">Dental</span>
+                <span className="o">Chain</span>
+              </div>
             </div>
 
             <div className="ic-h1">Welcome back</div>
@@ -321,7 +344,8 @@ export default function LoginPage() {
 
             {error && (
               <div className="ic-err">
-                <span style={{fontSize:15}}>⚠</span>{error}
+                <span style={{ fontSize: 15 }}>⚠</span>
+                {error}
               </div>
             )}
 
@@ -330,63 +354,123 @@ export default function LoginPage() {
                 <label className="ic-lbl">Email Address</label>
                 <div className="ic-iw">
                   {/* Email icon */}
-                  <svg className="ic-ico" viewBox="0 0 20 20" fill="rgba(255,255,255,0.6)">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                  <svg
+                    className="ic-ico"
+                    viewBox="0 0 20 20"
+                    fill="rgba(255,255,255,0.6)"
+                  >
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
-                  <input className="ic-inp"
+                  <input
+                    className="ic-inp"
                     type="email"
                     placeholder="your@email.com"
                     value={form.username}
                     autoComplete="email"
-                    onChange={e => setForm(f => ({...f, username: e.target.value}))}
-                    required/>
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, username: e.target.value }))
+                    }
+                    required
+                  />
                 </div>
               </div>
 
               <div className="ic-fld">
                 <label className="ic-lbl">Password</label>
                 <div className="ic-iw">
-                  <svg className="ic-ico" viewBox="0 0 20 20" fill="rgba(255,255,255,0.6)">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+                  <svg
+                    className="ic-ico"
+                    viewBox="0 0 20 20"
+                    fill="rgba(255,255,255,0.6)"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
-                  <input className="ic-inp ic-pr"
-                    type={showPwd ? 'text' : 'password'} placeholder="••••••••"
-                    value={form.password} autoComplete="current-password"
-                    onChange={e => setForm(f => ({...f, password: e.target.value}))} required/>
-                  <button type="button" className="ic-eye" onClick={() => setShowPwd(p => !p)}>
-                    <img src={showPwd ? hide : show} alt="toggle"
-                      style={{width:15,height:15,filter:'invert(1)',opacity:0.35}}/>
+                  <input
+                    className="ic-inp ic-pr"
+                    type={showPwd ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={form.password}
+                    autoComplete="current-password"
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, password: e.target.value }))
+                    }
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="ic-eye"
+                    onClick={() => setShowPwd((p) => !p)}
+                  >
+                    <img
+                      src={showPwd ? hide : show}
+                      alt="toggle"
+                      style={{
+                        width: 15,
+                        height: 15,
+                        filter: 'invert(1)',
+                        opacity: 0.35,
+                      }}
+                    />
                   </button>
                 </div>
               </div>
 
               <button type="submit" className="ic-btn" disabled={loading}>
-                {loading ? <><div className="ic-spin"/> Signing in…</> : 'Sign In →'}
+                {loading ? (
+                  <>
+                    <div className="ic-spin" /> Signing in…
+                  </>
+                ) : (
+                  'Sign In →'
+                )}
               </button>
             </form>
 
             <div className="ic-dc">
-              <button className="ic-dcb" onClick={() => setShowCreds(s => !s)}>
+              <button
+                className="ic-dcb"
+                onClick={() => setShowCreds((s) => !s)}
+              >
                 <span>Demo Credentials</span>
                 <span>{showCreds ? '▲ Hide' : '▼ Show'}</span>
               </button>
               {showCreds && (
-                <div style={{marginTop:14}}>
-                  {CREDENTIAL_GROUPS.map(g => (
+                <div style={{ marginTop: 14 }}>
+                  {CREDENTIAL_GROUPS.map((g) => (
                     <div key={g.label} className="ic-cg">
-                      <div className="ic-cgl" style={{color:g.color,borderBottom:`1px solid ${g.color}22`,paddingBottom:4}}>
+                      <div
+                        className="ic-cgl"
+                        style={{
+                          color: g.color,
+                          borderBottom: `1px solid ${g.color}22`,
+                          paddingBottom: 4,
+                        }}
+                      >
                         {g.label}
                       </div>
-                      {g.users.map(([u,p,r]) => (
-                        <div key={u} className="ic-cr" onClick={() => fillCreds(u,p)}>
-                          <div><span className="ic-cu">{u}</span><span className="ic-cro">{r}</span></div>
+                      {g.users.map(([u, p, r]) => (
+                        <div
+                          key={u}
+                          className="ic-cr"
+                          onClick={() => fillCreds(u, p)}
+                        >
+                          <div>
+                            <span className="ic-cu">{u}</span>
+                            <span className="ic-cro">{r}</span>
+                          </div>
                           <span className="ic-cp">{p}</span>
                         </div>
                       ))}
                     </div>
                   ))}
-                  <div className="ic-ch">Click any row to auto-fill credentials</div>
+                  <div className="ic-ch">
+                    Click any row to auto-fill credentials
+                  </div>
                 </div>
               )}
             </div>
@@ -394,11 +478,16 @@ export default function LoginPage() {
             <div className="ic-ft">
               <a href="/verify">Public Device Verification</a>
               &nbsp;·&nbsp;
-              <a href="https://dapparchitects.com" target="_blank" rel="noreferrer">dapparchitects.com</a>
+              <a
+                href="https://dapparchitects.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                dapparchitects.com
+              </a>
               &nbsp;·&nbsp;
               <span>© 2026–2027 DApp Architects, LLC</span>
             </div>
-
           </div>
         </div>
       </div>
