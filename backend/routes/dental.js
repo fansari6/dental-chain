@@ -230,7 +230,18 @@ router.get('/assets/consignments', requireAuth, async (req, res) => {
     } else if (repId) {
       result = await evaluateTransaction(identity(req), 'getConsignmentsByRep', repId);
     } else if (role === 'distributor') {
-      result = await evaluateTransaction(identity(req), 'getConsignmentsByRep', req.session.user.username);
+      // Try by repId first; fall back to assigned practices (local dev uses Admin identity)
+      const repResult = await evaluateTransaction(identity(req), 'getConsignmentsByRep', req.session.user.username);
+      if (repResult && repResult.length > 0) {
+        result = repResult;
+      } else {
+        // Fall back: filter all consignments by assigned practices
+        const allCons = await evaluateTransaction(identity(req), 'getAllConsignments');
+        const assigned = req.session.user.assignedPractices || [];
+        result = assigned.length > 0
+          ? allCons.filter(c => assigned.includes(c.hospitalId))
+          : allCons;
+      }
     } else if (['dental_assistant', 'infection_control', 'dentist'].includes(role) && userPracticeId) {
       // Look up practice name since blockchain stores by name not ID
       const practice = await getPracticeById(userPracticeId);

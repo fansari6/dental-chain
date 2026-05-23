@@ -1,3 +1,4 @@
+import 'dotenv/config';
 // DentalChain Backend Server
 // Dental implant traceability on Hyperledger Fabric 2.5
 import express          from 'express';
